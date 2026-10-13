@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
-const pages = ['index', 'guide', 'privacy', 'terms', 'order-success'];
+const pages = ['index', 'guide', 'drone-operator-id-label-rules', 'privacy', 'terms', 'order-success', '404'];
 
 // Shown on the terms and privacy pages; set the real values in the hosting environment.
 process.env.VITE_CONTACT_EMAIL ||= 'hello@example.com';

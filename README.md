@@ -71,9 +71,14 @@ The Playwright tests run on desktop and mobile viewports and record a video of e
 
 - every run writes them to `test-results/guide/<desktop|mobile>/`
 - `npm run guide` also copies the desktop ones into `public/guide/`
+- `npm run social` then redraws the link preview image (`public/og.png`) from the sample sheet
 - on GitHub, the **Update guide screenshots** workflow does the same and commits them
 
 CI uploads these artifacts on every run: `guide-screenshots`, `e2e-videos`, `sample-sheets` (the PDFs the tests downloaded) and `playwright-report`.
+
+### Search engines and AI assistants
+
+Every indexable page has its own title, description and canonical URL on `https://printdroneids.netlify.app`. `public/robots.txt`, `public/sitemap.xml` and `public/llms.txt` (a plain-text summary for AI assistants) use the same address, and `e2e/seo.spec.ts` checks them. Add new pages to all three and to `vite.config.ts`.
 
 The test PDFs in `e2e/fixtures` are made-up "SAMPLE" documents created by `npm run fixtures`. They contain no real IDs.
 

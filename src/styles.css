@@ -108,3 +108,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .lists, .options { grid-template-columns: 1fr; }
   .intro { padding-top: 1.25rem; }
 }
+
+.faq { border-top: 1px solid var(--line); padding: 1.5rem 0 2rem; max-width: 46rem; }
+.faq h3 { margin-top: 1.25rem; }
+.faq p { margin: 0; color: var(--muted); }
+.prose .lede { font-size: 1.1rem; color: var(--muted); }
+.prose .box-title { margin-top: 0; }
+.prose .cta .button-like { text-decoration: none; }
+.prose code { font-family: ui-monospace, "DejaVu Sans Mono", monospace; font-size: .92em; }
+.table-wrap { overflow-x: auto; }
+.prose table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.prose th, .prose td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.prose th { border-bottom-color: var(--ink); }

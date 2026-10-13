@@ -5,6 +5,32 @@
 [functions]
   node_bundler = "esbuild"
 
+# One address per page for search engines: the .html versions redirect to the clean URLs
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+
+[[redirects]]
+  from = "/guide.html"
+  to = "/guide"
+  status = 301
+
+[[redirects]]
+  from = "/privacy.html"
+  to = "/privacy"
+  status = 301
+
+[[redirects]]
+  from = "/terms.html"
+  to = "/terms"
+  status = 301
+
+[[redirects]]
+  from = "/drone-operator-id-label-rules.html"
+  to = "/drone-operator-id-label-rules"
+  status = 301
+
 [[headers]]
   for = "/*"
   [headers.values]

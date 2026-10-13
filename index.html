@@ -3,15 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Print Drone IDs – print your flyer ID and operator ID labels</title>
-  <meta name="description" content="Turn your UK CAA flyer ID and operator ID into a printable sheet of wallet cards and drone labels. Free, in your browser. Or get them laminated and posted for £4.99.">
+  <title>Free Drone Operator ID Labels and Flyer ID Card | Print Drone IDs</title>
+  <meta name="description" content="Print your UK CAA operator ID labels and flyer ID card for free. Labels with 3.3 mm+ capitals in three sizes, made in your browser. Or get them on waterproof vinyl, posted for £4.99.">
+  <link rel="canonical" href="https://printdroneids.netlify.app/">
+  <meta name="google-site-verification" content="XsIhK3YLSIQuFtoO52zYN2tpB1_caCUcvEkqF5S3Ayo">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Print Drone IDs">
+  <meta property="og:title" content="Free drone operator ID labels and flyer ID card">
+  <meta property="og:description" content="Make a printable sheet of operator ID labels with capitals over 3 mm tall, plus your flyer ID card, in a minute. Free, or printed and posted for £4.99.">
+  <meta property="og:url" content="https://printdroneids.netlify.app/">
+  <meta property="og:image" content="https://printdroneids.netlify.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A printable A4 sheet with a flyer ID card and operator ID labels">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/src/styles.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Print Drone IDs",
+    "url": "https://printdroneids.netlify.app/",
+    "description": "Turns UK CAA flyer ID and operator ID documents into a printable A4 sheet of wallet-sized flyer ID cards and drone operator ID labels with capitals at least 3.3 mm tall. Runs in the browser; files are not uploaded.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "inLanguage": "en-GB",
+    "isAccessibleForFree": true,
+    "image": "https://printdroneids.netlify.app/og.png",
+    "offers": [
+      { "@type": "Offer", "name": "Printable PDF", "price": "0", "priceCurrency": "GBP" },
+      { "@type": "Offer", "name": "Printed, laminated and posted (UK)", "price": "4.99", "priceCurrency": "GBP", "areaServed": "GB" }
+    ]
+  }
+  </script>
 </head>
 <body>
   <header class="top">
     <a class="brand" href="/">Print Drone IDs</a>
-    <nav><a href="/guide.html">How it works</a><a href="/privacy.html">Privacy</a></nav>
+    <nav><a href="/guide">How it works</a><a href="/drone-operator-id-label-rules">Label rules</a><a href="/privacy">Privacy</a></nav>
   </header>
 
   <main>
@@ -77,16 +109,33 @@
           </ul>
           <table class="quote" id="quote"></table>
           <button id="order" class="primary" type="button">Order and pay</button>
-          <p class="fine">You pay securely with Stripe and enter your delivery address there. To print your order we upload your cards and IDs, and delete them from our server once your order reaches our print desk. See the <a href="/terms.html">terms</a> and <a href="/privacy.html">privacy</a> pages.</p>
+          <p class="fine">You pay securely with Stripe and enter your delivery address there. To print your order we upload your cards and IDs, and delete them from our server once your order reaches our print desk. See the <a href="/terms">terms</a> and <a href="/privacy">privacy</a> pages.</p>
           <p id="order-error" class="error" role="alert" hidden></p>
         </div>
       </div>
+    </section>
+    <section class="faq" aria-labelledby="h-faq">
+      <h2 id="h-faq">Questions</h2>
+      <h3>What's the difference between a flyer ID and an operator ID?</h3>
+      <p>Your <strong>flyer ID</strong> (GBR-RP-…) shows you passed the CAA's online theory test. It's yours as a pilot and doesn't go on the drone. Your <strong>operator ID</strong> (GBR-OP-…) belongs to whoever is responsible for the drone, and it must be labelled on every drone they own.</p>
+      <h3>Where does the operator ID label go?</h3>
+      <p>On the main body of the drone, either visible from outside or inside a compartment you can open without tools, like the battery bay. It must be secure and safe from damage. See the full <a href="/drone-operator-id-label-rules">operator ID label rules</a>.</p>
+      <h3>How big do the letters have to be?</h3>
+      <p>Block capitals taller than 3 mm. Every label on this sheet uses capitals at least 3.3 mm tall, in three sizes so one fits your drone.</p>
+      <h3>Which drones need a label?</h3>
+      <p>Since 1 January 2026, any drone of 250 g or more, and any drone of 100 g or more with a camera. Under 100 g it's optional.</p>
+      <h3>Is it really free?</h3>
+      <p>Yes. The PDF is made in your browser and costs nothing. You only pay if you want us to print the labels on waterproof vinyl, laminate your flyer ID card and post them to you.</p>
+      <h3>Are my files uploaded?</h3>
+      <p>Not for the free sheet. Your PDFs are read on your own device. They're only sent to us if you order prints. Read the <a href="/privacy">privacy notice</a>.</p>
+      <h3>Does it work for operator IDs from other countries?</h3>
+      <p>Yes. Type or paste any operator ID up to 24 characters and it's printed as you type it. Reading IDs from PDFs and printed orders are UK only for now.</p>
     </section>
   </main>
 
   <footer class="bottom">
     <p>Not affiliated with the UK Civil Aviation Authority. Always check your details against <a href="https://register-drones.caa.co.uk">register-drones.caa.co.uk</a>.</p>
-    <p>Free and open source on <a href="https://github.com/sinancsoysal/drone-id-sheet">GitHub</a>. <a href="/terms.html">Terms</a></p>
+    <p>Free and open source on <a href="https://github.com/sinancsoysal/drone-id-sheet">GitHub</a>. <a href="/terms">Terms</a></p>
   </footer>
   <script type="module" src="/src/main.ts"></script>
 </body>
