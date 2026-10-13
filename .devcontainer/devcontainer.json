@@ -1,0 +1,14 @@
+{
+  "name": "Drone ID Sheet",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "runServices": ["app", "mailpit"],
+  "workspaceFolder": "/workspaces/drone-id-sheet",
+  "remoteUser": "node",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["anthropic.claude-code", "ms-playwright.playwright", "stripe.vscode-stripe"]
+    }
+  }
+}

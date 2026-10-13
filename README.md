@@ -25,17 +25,45 @@ The same layout code (`src/lib`) runs in the browser for the free PDF and in a N
 
 Prices are set in [`src/lib/pricing.ts`](src/lib/pricing.ts).
 
-## Running it locally
+## Development container
+
+`.devcontainer/` has everything ready to go: Node 22, Playwright's Chromium, Netlify CLI, Stripe CLI, and Claude Code with the [Stripe plugin](https://github.com/stripe/ai), which includes Stripe's MCP server. A [Mailpit](https://mailpit.axllent.org) container catches order emails. Git and `gh` stay on your host, so commit from there.
+
+Open the folder in VS Code and choose **Reopen in Container**, or use the CLI:
+
+```sh
+npx @devcontainers/cli up --workspace-folder .
+npx @devcontainers/cli exec --workspace-folder . bash    # shell inside the container
+```
+
+The first time, inside the container:
+
+```sh
+claude                      # log in, then run /mcp to connect the Stripe MCP server
+stripe login                # link the Stripe CLI to your account
+cp .env.example .env.local  # add your Stripe test secret key
+```
+
+Then:
+
+```sh
+npm run dev:netlify         # site and functions on http://localhost:8888
+npm run stripe:listen       # forwards Stripe webhooks; put the whsec_… it prints in .env.local
+```
+
+Paid test orders show up in Mailpit at http://localhost:18025.
+
+Logins, plugins, the browser and `node_modules` live in Docker volumes, so they survive rebuilds. If a host port is taken, change it with `NETLIFY_DEV_PORT`, `VITE_DEV_PORT`, `VITE_PREVIEW_PORT` or `MAILPIT_PORT`.
+
+## Running it without the container
 
 ```sh
 npm install
-npm run dev              # http://localhost:5173 (the order button needs the Netlify functions, see below)
+npm run dev              # http://localhost:5173 (ordering needs `npm run dev:netlify`)
 npm test                 # unit tests (Vitest)
 npx playwright install chromium
 npm run test:e2e         # end-to-end tests (Playwright), records videos
 ```
-
-To run the order flow end to end on your machine, use `npx netlify dev` with Stripe test keys in `.env.local`.
 
 ### Tests, videos and guide screenshots
 

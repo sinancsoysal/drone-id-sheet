@@ -1,0 +1,43 @@
+name: drone-id-sheet
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/drone-id-sheet:cached
+      # kept apart from the host's node_modules
+      - node-modules:/workspaces/drone-id-sheet/node_modules
+      # logins and plugins survive rebuilds
+      - claude:/home/node/.claude
+      - netlify:/home/node/.config/netlify
+      - stripe:/home/node/.config/stripe
+      - playwright:/home/node/.cache/ms-playwright
+    environment:
+      # "localhost" resolves to ::1 first in the container, which breaks netlify dev's function proxy
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      # order emails go to Mailpit; read them at http://localhost:18025
+      SMTP_URL: smtp://mailpit:1025
+      ORDER_EMAIL_TO: orders@example.test
+      ORDER_EMAIL_FROM: shop@example.test
+    ports:
+      # host ports can be changed with these variables if they clash
+      - 127.0.0.1:${NETLIFY_DEV_PORT:-8888}:8888 # netlify dev (site + functions)
+      - 127.0.0.1:${VITE_DEV_PORT:-5173}:5173 # vite dev
+      - 127.0.0.1:${VITE_PREVIEW_PORT:-4173}:4173 # vite preview / e2e
+    depends_on:
+      - mailpit
+
+  mailpit:
+    image: axllent/mailpit:v1.31.5
+    ports:
+      - 127.0.0.1:${MAILPIT_PORT:-18025}:8025 # web inbox
+
+volumes:
+  node-modules:
+  claude:
+  netlify:
+  stripe:
+  playwright:

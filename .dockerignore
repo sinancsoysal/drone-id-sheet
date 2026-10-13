@@ -1,0 +1,3 @@
+# the devcontainer image only needs the lockfile
+*
+!package-lock.json
