@@ -4,8 +4,9 @@ import { formatGBP } from '../../src/lib/pricing';
 import { buildSheet } from '../../src/lib/sheet';
 import { cardKey, orders, type Order } from './orders';
 
+/** Order emails go through Resend; SMTP (Mailpit in the devcontainer) is for local development. */
 export function mailConfigured(): boolean {
-  return Boolean(process.env.SMTP_URL && process.env.ORDER_EMAIL_TO);
+  return Boolean(process.env.ORDER_EMAIL_TO && (process.env.RESEND_API_KEY || process.env.SMTP_URL));
 }
 
 export interface OrderEmail {
@@ -67,13 +68,49 @@ export async function sendOrderEmail(order: Order, origin: string): Promise<void
   });
 
   const mail = orderEmail(order);
-  const to = process.env.ORDER_EMAIL_TO!;
+  await deliver({
+    to: process.env.ORDER_EMAIL_TO!,
+    ...mail,
+    attachment: { filename: `${order.id}.pdf`, content: pdf },
+    // Resend drops repeats of the same key for 24 hours, so a retried webhook can't email twice
+    idempotencyKey: `order-email-${order.id}`,
+  });
+}
+
+interface Outgoing extends OrderEmail {
+  to: string;
+  attachment: { filename: string; content: Uint8Array };
+  idempotencyKey: string;
+}
+
+async function deliver(mail: Outgoing): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+        'idempotency-key': mail.idempotencyKey,
+      },
+      body: JSON.stringify({
+        from: process.env.ORDER_EMAIL_FROM || 'Drone ID Sheet <onboarding@resend.dev>',
+        to: [mail.to],
+        reply_to: mail.replyTo,
+        subject: mail.subject,
+        text: mail.text,
+        attachments: [{ filename: mail.attachment.filename, content: Buffer.from(mail.attachment.content).toString('base64') }],
+      }),
+    });
+    if (!res.ok) throw new Error(`Resend answered ${res.status}: ${await res.text()}`);
+    return;
+  }
   await nodemailer.createTransport(process.env.SMTP_URL!).sendMail({
-    from: process.env.ORDER_EMAIL_FROM || to,
-    to,
+    from: process.env.ORDER_EMAIL_FROM || mail.to,
+    to: mail.to,
     replyTo: mail.replyTo,
     subject: mail.subject,
     text: mail.text,
-    attachments: [{ filename: `${order.id}.pdf`, content: Buffer.from(pdf), contentType: 'application/pdf' }],
+    attachments: [{ filename: mail.attachment.filename, content: Buffer.from(mail.attachment.content), contentType: 'application/pdf' }],
   });
 }

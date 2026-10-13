@@ -27,7 +27,7 @@ Prices are set in [`src/lib/pricing.ts`](src/lib/pricing.ts).
 
 ## Development container
 
-`.devcontainer/` has everything ready to go: Node 22, Playwright's Chromium, Netlify CLI, Stripe CLI, and Claude Code with the [Stripe plugin](https://github.com/stripe/ai), which includes Stripe's MCP server. A [Mailpit](https://mailpit.axllent.org) container catches order emails. Git and `gh` stay on your host, so commit from there.
+`.devcontainer/` has everything ready to go: Node 22, Playwright's Chromium, Netlify CLI, Stripe CLI, and Claude Code with the [Stripe plugin](https://github.com/stripe/ai), which includes Stripe's MCP server. A [Mailpit](https://mailpit.axllent.org) container catches order emails: without `RESEND_API_KEY`, the functions send over SMTP to Mailpit instead of using Resend. Git and `gh` stay on your host, so commit from there.
 
 Open the folder in VS Code and choose **Reopen in Container**, or use the CLI:
 
@@ -88,26 +88,26 @@ The site is static (`dist/`). Three Netlify Functions in `netlify/functions` han
    |---|---|
    | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_live_…` or `sk_test_…`) |
    | `STRIPE_WEBHOOK_SECRET` | Signing secret of the webhook below |
-   | `SMTP_URL` | SMTP connection for order emails, e.g. `smtps://user:password@smtp.example.com:465` |
+   | `RESEND_API_KEY` | [Resend](https://resend.com) API key for the order emails (`re_…`) |
    | `ORDER_EMAIL_TO` | Where order emails go |
-   | `ORDER_EMAIL_FROM` | Sender address (optional, defaults to `ORDER_EMAIL_TO`) |
+   | `ORDER_EMAIL_FROM` | Sender, e.g. `Print Drone IDs <orders@yourdomain>` once the domain is verified in Resend. Until then it defaults to `onboarding@resend.dev`, which only delivers to your own Resend account address. |
    | `VITE_CONTACT_EMAIL` | Contact address shown on the terms and privacy pages |
    | `VITE_BUSINESS_DETAILS` | Your business name and postal address for the terms page (UK law requires this) |
 
 3. In Stripe, add a webhook endpoint `https://<your-site>/api/stripe-webhook` for these events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`.
 4. In Stripe, turn on email receipts and notifications for successful payments.
 
-If Stripe or email isn't set up, the order button shows a "not set up yet" message and the free download still works.
+If Stripe or Resend isn't set up, the order button shows a "not set up yet" message and the free download still works.
 
 ### Fulfilling orders
 
-When Stripe confirms a payment, the webhook emails `ORDER_EMAIL_TO`. The email contains:
+When Stripe confirms a payment, the webhook emails `ORDER_EMAIL_TO` through Resend. The email contains:
 
 - the order reference, items, total and the customer's delivery address
 - `Reply-To` set to the customer, so you can reply to them directly
 - the print file `DIS-XXXXXXX.pdf` attached: cards on the first page(s), for 250 gsm card, laminating and trimming; stickers on the following page(s), for white waterproof vinyl, cut along the label outlines
 
-The uploaded card images and operator IDs are deleted from Netlify Blobs once the email is sent. If sending fails, the webhook returns an error and Stripe retries it later, so no order is lost. If a checkout isn't finished, its uploads are deleted when the Stripe session expires (after 1 hour).
+The uploaded card images and operator IDs are deleted from Netlify Blobs once the email is sent. If sending fails, the webhook returns an error and Stripe retries it later, so no order is lost. Each order uses a Resend idempotency key, so a retry can't send the same email twice. If a checkout isn't finished, its uploads are deleted when the Stripe session expires (after 1 hour).
 
 ## Privacy
 
