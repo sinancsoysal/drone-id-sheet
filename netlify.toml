@@ -10,26 +10,31 @@
   from = "/index.html"
   to = "/"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/guide.html"
   to = "/guide"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/privacy.html"
   to = "/privacy"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/terms.html"
   to = "/terms"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/drone-operator-id-label-rules.html"
   to = "/drone-operator-id-label-rules"
   status = 301
+  force = true
 
 [[headers]]
   for = "/*"
