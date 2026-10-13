@@ -3,6 +3,10 @@ import { defineConfig } from 'vite';
 
 const pages = ['index', 'guide', 'privacy', 'terms', 'order-success'];
 
+// Shown on the terms and privacy pages; set the real values in the hosting environment.
+process.env.VITE_CONTACT_EMAIL ||= 'hello@example.com';
+process.env.VITE_BUSINESS_DETAILS ||= '[your business name and postal address]';
+
 export default defineConfig({
   build: {
     target: 'es2022',
