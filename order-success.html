@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Order received – Drone ID Sheet</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">Drone ID Sheet</a>
+    <nav><a href="/guide.html">How it works</a><a href="/privacy.html">Privacy</a></nav>
+  </header>
+  <main class="prose">
+    <h1 id="title">Checking your order…</h1>
+    <div class="card-box" id="box" hidden>
+      <p>Order reference: <strong id="ref" data-testid="order-ref"></strong></p>
+      <p id="detail"></p>
+    </div>
+    <p><a href="/">Make another sheet</a></p>
+  </main>
+  <footer class="bottom">
+    <p>Not affiliated with the UK Civil Aviation Authority. Always check your details against <a href="https://register-drones.caa.co.uk">register-drones.caa.co.uk</a>.</p>
+    <p>Free and open source on <a href="https://github.com/sinancsoysal/drone-id-sheet">GitHub</a>. <a href="/terms.html">Terms</a></p>
+  </footer>
+  <script type="module" src="/src/success.ts"></script>
+</body></html>

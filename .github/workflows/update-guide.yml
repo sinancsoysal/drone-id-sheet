@@ -1,0 +1,33 @@
+# Retakes the how-to guide screenshots from the e2e tests and commits them.
+name: Update guide screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run guide
+      - name: Commit changed screenshots
+        run: |
+          git add public/guide
+          if git diff --cached --quiet; then
+            echo "Screenshots are up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update guide screenshots"
+          git push

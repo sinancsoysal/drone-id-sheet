@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drone ID Sheet – print your flyer ID and operator ID labels</title>
+  <meta name="description" content="Turn your UK CAA flyer ID and operator ID into a printable sheet of wallet cards and drone labels. Free, in your browser. Or get them laminated and posted for £4.99.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">Drone ID Sheet</a>
+    <nav><a href="/guide.html">How it works</a><a href="/privacy.html">Privacy</a></nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Print your flyer ID card and operator ID labels</h1>
+      <p>Add the flyer ID and operator ID documents you got from the CAA. You get one A4 sheet with wallet-sized cards and labels for your drones, ready to print. It's free and your files never leave your browser. Or we can print, laminate and post them to you for <strong data-price-base>£4.99</strong>.</p>
+    </section>
+
+    <section class="step" id="step-add" aria-labelledby="h-add">
+      <h2 id="h-add"><span class="num">1</span> Add your IDs</h2>
+      <label class="drop" id="drop" data-testid="drop">
+        <input type="file" id="file" multiple accept=".pdf,application/pdf,image/png,image/jpeg,image/webp">
+        <span class="drop-main"><span class="button-like">Choose files</span> or drop them here</span>
+        <span class="drop-hint">Flyer ID and operator ID PDFs from register-drones.caa.co.uk. Photos or screenshots (PNG, JPG) work too. Add as many as you like.</span>
+      </label>
+      <form id="op-form" class="op-form" novalidate>
+        <label for="op-input">Or type an operator ID</label>
+        <div class="inline">
+          <input id="op-input" name="op" placeholder="GBR-OP-XXXXXXXXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button type="submit">Add</button>
+        </div>
+      </form>
+      <div id="busy" class="busy" hidden>Reading files…</div>
+      <ul id="messages" class="messages" aria-live="polite"></ul>
+    </section>
+
+    <section class="step" id="step-check" aria-labelledby="h-check" hidden>
+      <h2 id="h-check"><span class="num">2</span> Check</h2>
+      <div class="lists">
+        <div>
+          <h3>Flyer ID cards</h3>
+          <ul id="card-list" class="items"></ul>
+          <p class="empty" id="card-empty">None yet. Add your flyer ID PDF to include the card.</p>
+        </div>
+        <div>
+          <h3>Operator ID labels</h3>
+          <ul id="op-list" class="items"></ul>
+          <p class="empty" id="op-empty">None yet. Add your operator ID to include drone labels.</p>
+        </div>
+      </div>
+      <h3>Preview</h3>
+      <div id="preview" class="preview" data-testid="preview"></div>
+    </section>
+
+    <section class="step" id="step-get" aria-labelledby="h-get" hidden>
+      <h2 id="h-get"><span class="num">3</span> Get it</h2>
+      <div class="options">
+        <div class="option" id="option-free">
+          <h3>Print it yourself</h3>
+          <p class="price">Free</p>
+          <p>Download the A4 PDF and print it at 100% ("Actual size"). Cut along the dashed lines.</p>
+          <button id="download" class="primary" type="button">Download PDF</button>
+        </div>
+        <div class="option" id="option-paid">
+          <h3>We print and post it</h3>
+          <p class="price" id="order-total">£4.99</p>
+          <ul class="ticks">
+            <li>Flyer ID cards laminated, wallet size</li>
+            <li>Operator ID labels on waterproof vinyl, cut and ready to stick</li>
+            <li>Free UK delivery by Royal Mail, usually posted within 2 working days</li>
+          </ul>
+          <table class="quote" id="quote"></table>
+          <button id="order" class="primary" type="button">Order and pay</button>
+          <p class="fine">You pay securely with Stripe and enter your delivery address there. To print your order we upload your cards and IDs, and delete them from our server once your order reaches our print desk. See the <a href="/terms.html">terms</a> and <a href="/privacy.html">privacy</a> pages.</p>
+          <p id="order-error" class="error" role="alert" hidden></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <p>Not affiliated with the UK Civil Aviation Authority. Always check your details against <a href="https://register-drones.caa.co.uk">register-drones.caa.co.uk</a>.</p>
+    <p>Free and open source on <a href="https://github.com/sinancsoysal/drone-id-sheet">GitHub</a>. <a href="/terms.html">Terms</a></p>
+  </footer>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
