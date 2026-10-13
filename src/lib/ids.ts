@@ -45,8 +45,9 @@ export function checkOperatorId(raw: string): OperatorCheck {
 export function formatOperatorInput(raw: string): string {
   let clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!clean || looksLikeFlyerId(raw)) return '';
-  // pasted text like "Operator ID: GBR-OP-…" starts at the ID
-  const at = clean.indexOf(PREFIX_LETTERS);
+  // start at the last prefix: pasted text like "Operator ID: GBR-OP-…", or an ID
+  // pasted after a prefix that was already typed, must not end up as GBR-OP-GBROP…
+  const at = clean.lastIndexOf(PREFIX_LETTERS);
   if (at > 0) clean = clean.slice(at);
   if (PREFIX_LETTERS.startsWith(clean) && clean.length < PREFIX_LETTERS.length) {
     // still typing the prefix: G, GB, GBR-, GBR-O

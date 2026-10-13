@@ -50,6 +50,11 @@ describe('formatOperatorInput', () => {
     expect(formatOperatorInput('GBR-OP-SAMPLE00TEST-ABC')).toBe('GBR-OP-SAMPLE00TEST');
     expect(formatOperatorInput('@#!*')).toBe('');
   });
+  it('never repeats the prefix when an ID is pasted after typed text', () => {
+    expect(formatOperatorInput('GBR-OP-GBR-OP-SAMPLE00TEST')).toBe('GBR-OP-SAMPLE00TEST');
+    expect(formatOperatorInput('GBR-OP-SAGBR-OP-SAMPLE00TEST')).toBe('GBR-OP-SAMPLE00TEST');
+    expect(formatOperatorInput('GBR-GBR-OP-SAMPLE00TEST')).toBe('GBR-OP-SAMPLE00TEST');
+  });
   it('leaves flyer IDs out', () => {
     expect(looksLikeFlyerId('gbr-rp-sampleALEX01')).toBe(true);
     expect(formatOperatorInput('GBR-RP-SAMPLEALEX01')).toBe('');

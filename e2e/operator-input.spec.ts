@@ -55,6 +55,23 @@ test('adds a pasted ID straight away, ignoring text around it', async ({ page })
   await expect(input(page)).toHaveValue('');
 });
 
+for (const typed of ['gbrop', 'gbropsa', 'gb']) {
+  test(`pasting a full ID after typing "${typed}" replaces it`, async ({ page }) => {
+    await input(page).pressSequentially(typed);
+    await paste(page, 'GBR-OP-SAMPLE00TEST');
+    await expect(page.getByTestId('operator-item')).toHaveCount(1);
+    await expect(page.getByTestId('operator-item')).toContainText('GBR-OP-SAMPLE00TEST');
+    await expect(input(page)).toHaveValue('');
+  });
+}
+
+test('a partial paste joins what was typed', async ({ page }) => {
+  await input(page).pressSequentially('gbr-op-');
+  await paste(page, 'sample');
+  await expect(input(page)).toHaveValue('GBR-OP-SAMPLE');
+  await expect(page.getByTestId('operator-item')).toHaveCount(0);
+});
+
 test('adds every ID when several are pasted at once', async ({ page }) => {
   await paste(page, 'GBR-OP-SAMPLE00TEST, GBR-OP-SAMPLE00TWO2');
   await expect(page.getByTestId('operator-item')).toHaveCount(2);

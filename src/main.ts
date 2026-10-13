@@ -166,12 +166,16 @@ opInput.addEventListener('input', (e) => {
 });
 
 opInput.addEventListener('paste', (e) => {
-  const ids = findOperatorIds(e.clipboardData?.getData('text') ?? '');
-  if (ids.length < 2) return;
-  // several IDs pasted at once: add them all
+  const text = e.clipboardData?.getData('text') ?? '';
+  const ids = findOperatorIds(text);
+  const whole = formatOperatorInput(text);
+  if (ids.length < 2 && !checkOperatorId(whole).ok) return; // partial paste: merge it with what's typed
+  // a complete ID replaces whatever is in the box; several IDs are all added
   e.preventDefault();
   messages.replaceChildren();
-  ids.forEach((id) => addOperator(id));
+  (ids.length > 1 ? ids : [whole]).forEach((id) => addOperator(id));
+  opInput.value = lastOp = '';
+  refreshOpHint();
   update();
 });
 
