@@ -1,6 +1,8 @@
 /** Browser-only: reads uploaded PDFs and images and turns them into cards and operator IDs. */
-import * as pdfjs from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// The legacy build carries fallbacks for very new JavaScript features, which
+// Firefox ESR and older Safari versions don't have yet.
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { PDFDocument } from 'pdf-lib';
 import { findCardBox } from './bbox';
 import { cropToCard, type PdfBox } from './crop';

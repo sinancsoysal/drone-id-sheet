@@ -1,4 +1,4 @@
-import { checkOperatorId, splitOperatorInput } from './lib/ids';
+import { checkOperatorId, findOperatorIds, formatOperatorInput, looksLikeFlyerId, operatorCharsLeft } from './lib/ids';
 import { formatGBP, PRICING, quote } from './lib/pricing';
 import type { CardItem } from './lib/reader';
 
@@ -109,17 +109,84 @@ drop.addEventListener('drop', (e) => {
   if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
 });
 
-opForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  messages.replaceChildren();
-  const ids = splitOperatorInput(opInput.value);
-  if (!ids.length) {
-    say('Enter an operator ID, like GBR-OP-ABCD1234EFGH.', 'error');
+// Operator ID box: keeps the value in the GBR-OP-XXXXXXXXXXXX template while typing or pasting
+const opAdd = $<HTMLButtonElement>('op-add');
+const opHint = $('op-hint');
+const HINT = opHint.textContent!;
+const alnum = (s: string) => s.replace(/[^A-Za-z0-9]/g, '');
+
+/** Index just after the n-th letter or digit of a formatted value. */
+function caretAfter(value: string, n: number) {
+  if (n <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < value.length; i++) {
+    if (/[A-Z0-9]/.test(value[i]) && ++seen === n) return i + 1;
+  }
+  return value.length;
+}
+
+function refreshOpHint() {
+  const left = operatorCharsLeft(opInput.value);
+  const complete = checkOperatorId(opInput.value).ok;
+  opAdd.disabled = !complete;
+  opHint.classList.toggle('ready', complete);
+  opHint.textContent = !opInput.value ? HINT
+    : complete ? 'Complete. Press Add or Enter.'
+    : `${left} more letter${left === 1 ? '' : 's'} or number${left === 1 ? '' : 's'} after GBR-OP-`;
+}
+
+let lastOp = '';
+opInput.addEventListener('input', (e) => {
+  const raw = opInput.value;
+  const atEnd = (opInput.selectionStart ?? raw.length) >= raw.length;
+  let before = alnum(raw.slice(0, opInput.selectionStart ?? raw.length));
+  if (looksLikeFlyerId(raw)) {
+    messages.replaceChildren();
+    say('That looks like a flyer ID (GBR-RP-…). Add it by uploading the flyer ID PDF above.', 'error');
+    opInput.value = lastOp = '';
+    refreshOpHint();
     return;
   }
-  const allOk = ids.map((id) => addOperator(id)).every(Boolean);
-  if (allOk) opInput.value = '';
+  let next = formatOperatorInput(raw);
+  if ((e as InputEvent).inputType?.startsWith('delete') && next === lastOp && before.length) {
+    // only a dash was deleted: remove the character in front of it as well
+    const chars = alnum(raw).split('');
+    chars.splice(before.length - 1, 1);
+    before = before.slice(0, -1);
+    next = formatOperatorInput(chars.join(''));
+  }
+  // the prefix was filled in for the user, so the caret moves past it
+  const added = alnum(next).length - alnum(raw).length;
+  if (added > 0 && !alnum(raw.toUpperCase()).startsWith('GBROP')) before += 'x'.repeat(added);
+  opInput.value = lastOp = next;
+  const caret = atEnd ? next.length : caretAfter(next, before.length);
+  opInput.setSelectionRange(caret, caret);
+  refreshOpHint();
+  if ((e as InputEvent).inputType === 'insertFromPaste' && checkOperatorId(next).ok) addTypedOperator();
+});
+
+opInput.addEventListener('paste', (e) => {
+  const ids = findOperatorIds(e.clipboardData?.getData('text') ?? '');
+  if (ids.length < 2) return;
+  // several IDs pasted at once: add them all
+  e.preventDefault();
+  messages.replaceChildren();
+  ids.forEach((id) => addOperator(id));
   update();
+});
+
+function addTypedOperator() {
+  messages.replaceChildren();
+  if (addOperator(opInput.value)) {
+    opInput.value = lastOp = '';
+    refreshOpHint();
+  }
+  update();
+}
+
+opForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (checkOperatorId(opInput.value).ok) addTypedOperator();
 });
 
 function update() {

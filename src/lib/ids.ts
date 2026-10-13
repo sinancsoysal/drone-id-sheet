@@ -3,7 +3,6 @@
 export const FLYER_ID_RE = /GBR-RP-[A-Z0-9]{12}/;
 export const OPERATOR_ID_RE = /GBR-OP-[A-Z0-9]{12}/g;
 const UK_OPERATOR_RE = /^GBR-OP-[A-Z0-9]{12}$/;
-const LOOSE_ID_RE = /^[A-Z0-9][A-Z0-9-]{5,23}$/;
 
 export interface FlyerDetails {
   flyerId?: string;
@@ -15,35 +14,57 @@ export interface FlyerDetails {
 export interface OperatorCheck {
   ok: boolean;
   id: string;
-  /** Shown to the user when the ID is accepted but looks unusual, or rejected. */
+  /** Why the ID was rejected. */
   message?: string;
 }
+
+export const OPERATOR_PREFIX = 'GBR-OP-';
+export const OPERATOR_BODY_LENGTH = 12;
+const PREFIX_LETTERS = 'GBROP';
 
 export function normaliseOperatorId(raw: string): string {
   return raw.toUpperCase().replace(/\s+/g, '').replace(/[‐‑–—]/g, '-');
 }
 
+/** Only complete UK operator IDs are accepted: GBR-OP- and 12 letters or numbers. */
 export function checkOperatorId(raw: string): OperatorCheck {
   const id = normaliseOperatorId(raw);
   if (!id) return { ok: false, id, message: 'Enter an operator ID.' };
   if (UK_OPERATOR_RE.test(id)) return { ok: true, id };
-  if (/^GBR-RP-/.test(id)) {
+  if (/^GBR-?RP/.test(id)) {
     return { ok: false, id, message: `${id} is a flyer ID. Operator IDs start with GBR-OP-. Upload the flyer ID PDF instead.` };
   }
-  if (/^GBR-OP-/.test(id)) {
-    return { ok: false, id, message: `${id} doesn't look right. UK operator IDs are GBR-OP- followed by 12 letters or numbers.` };
-  }
-  if (LOOSE_ID_RE.test(id)) {
-    return { ok: true, id, message: `${id} isn't in the UK format (GBR-OP-…). Check it matches your registration.` };
-  }
-  return { ok: false, id, message: `${raw.trim()} doesn't look like an operator ID.` };
+  return { ok: false, id, message: `${id} isn't a UK operator ID. It should be GBR-OP- followed by 12 letters or numbers.` };
 }
 
-/** Splits free text (commas, spaces, new lines) into candidate operator IDs. */
-export function splitOperatorInput(text: string): string[] {
-  const found = text.toUpperCase().match(OPERATOR_ID_RE);
-  if (found) return unique(found);
-  return unique(text.split(/[\s,;]+/).map(normaliseOperatorId).filter(Boolean));
+/**
+ * Turns whatever is typed or pasted into the GBR-OP-XXXXXXXXXXXX template:
+ * capitals only, other characters dropped, dashes added, at most 12 characters
+ * after the prefix. The prefix can be typed, pasted or left out.
+ */
+export function formatOperatorInput(raw: string): string {
+  let clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!clean || looksLikeFlyerId(raw)) return '';
+  // pasted text like "Operator ID: GBR-OP-…" starts at the ID
+  const at = clean.indexOf(PREFIX_LETTERS);
+  if (at > 0) clean = clean.slice(at);
+  if (PREFIX_LETTERS.startsWith(clean) && clean.length < PREFIX_LETTERS.length) {
+    // still typing the prefix: G, GB, GBR-, GBR-O
+    return clean.length >= 3 ? `GBR-${clean.slice(3)}` : clean;
+  }
+  const body = clean.startsWith(PREFIX_LETTERS) ? clean.slice(PREFIX_LETTERS.length) : clean;
+  return OPERATOR_PREFIX + body.slice(0, OPERATOR_BODY_LENGTH);
+}
+
+/** True for text that starts like a flyer ID (GBR-RP-), which belongs in the file upload instead. */
+export function looksLikeFlyerId(raw: string): boolean {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith('GBRRP');
+}
+
+/** How many characters are still missing from a formatted operator ID. */
+export function operatorCharsLeft(formatted: string): number {
+  const body = formatted.startsWith(OPERATOR_PREFIX) ? formatted.slice(OPERATOR_PREFIX.length) : '';
+  return OPERATOR_BODY_LENGTH - body.length;
 }
 
 export function findOperatorIds(text: string): string[] {

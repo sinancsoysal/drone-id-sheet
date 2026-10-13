@@ -28,11 +28,13 @@
         <span class="drop-hint">Flyer ID and operator ID PDFs from register-drones.caa.co.uk. Photos or screenshots (PNG, JPG) work too. Add as many as you like.</span>
       </label>
       <form id="op-form" class="op-form" novalidate>
-        <label for="op-input">Or type an operator ID</label>
+        <label for="op-input">Or type or paste an operator ID</label>
         <div class="inline">
-          <input id="op-input" name="op" placeholder="GBR-OP-XXXXXXXXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
-          <button type="submit">Add</button>
+          <input id="op-input" name="op" placeholder="GBR-OP-XXXXXXXXXXXX" inputmode="text" autocomplete="off"
+            autocapitalize="characters" spellcheck="false" pattern="GBR-OP-[A-Z0-9]{12}" aria-describedby="op-hint">
+          <button type="submit" id="op-add" disabled>Add</button>
         </div>
+        <p id="op-hint" class="hint">GBR-OP- followed by 12 letters or numbers. Dashes are added for you.</p>
       </form>
       <div id="busy" class="busy" hidden>Reading files…</div>
       <ul id="messages" class="messages" aria-live="polite"></ul>

@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 
 test('downloaded PDF holds the cards and the operator ID labels', async ({ page }, info) => {
   await page.setInputFiles('#file', FLYERS);
-  await page.getByLabel('Or type an operator ID').fill('gbr-op-sample00test');
+  await page.getByLabel('Or type or paste an operator ID').fill('gbr-op-sample00test');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.getByTestId('operator-item')).toContainText('GBR-OP-SAMPLE00TEST');
   await previewReady(page);
@@ -30,17 +30,6 @@ test('crops the card and leaves out browser headers and footers', async ({ page 
   await expect(img).toBeVisible();
   const aspect = await img.evaluate((i: HTMLImageElement) => i.naturalHeight / i.naturalWidth);
   expect(aspect).toBeCloseTo(158 / 222, 1);
-});
-
-test('explains operator IDs that are wrong', async ({ page }) => {
-  const input = page.getByLabel('Or type an operator ID');
-  await input.fill('GBR-RP-SAMPLEALEX01');
-  await input.press('Enter');
-  await expect(page.locator('#messages li.error')).toContainText('is a flyer ID');
-  await input.fill('GBR-OP-123');
-  await input.press('Enter');
-  await expect(page.locator('#messages li.error')).toContainText("doesn't look right");
-  await expect(page.locator('#step-check')).toBeHidden();
 });
 
 test('warns about files without an ID and about duplicates', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkOperatorId, findOperatorIds, parseFlyerLines, splitForTwoLines, splitOperatorInput } from '../../src/lib/ids';
+import { checkOperatorId, findOperatorIds, formatOperatorInput, looksLikeFlyerId, operatorCharsLeft, parseFlyerLines, splitForTwoLines } from '../../src/lib/ids';
 
 describe('checkOperatorId', () => {
   it('accepts UK operator IDs and normalises case and spaces', () => {
@@ -16,10 +16,9 @@ describe('checkOperatorId', () => {
   it('rejects malformed UK IDs', () => {
     expect(checkOperatorId('GBR-OP-SHORT').ok).toBe(false);
   });
-  it('accepts other formats with a warning', () => {
-    const r = checkOperatorId('FIN87astrdge12k8');
-    expect(r.ok).toBe(true);
-    expect(r.message).toMatch(/UK format/);
+  it('rejects IDs that are not in the UK format', () => {
+    expect(checkOperatorId('FIN87astrdge12k8').ok).toBe(false);
+    expect(checkOperatorId('GBR-OP-SAMPLE00TEST-ABC').ok).toBe(false);
   });
   it('rejects junk', () => {
     expect(checkOperatorId('hello!').ok).toBe(false);
@@ -27,12 +26,40 @@ describe('checkOperatorId', () => {
   });
 });
 
-describe('splitOperatorInput', () => {
-  it('finds UK IDs in pasted text', () => {
-    expect(splitOperatorInput('mine: GBR-OP-AAAA1111BBBB, dad GBR-OP-CCCC2222DDDD')).toEqual(['GBR-OP-AAAA1111BBBB', 'GBR-OP-CCCC2222DDDD']);
+describe('formatOperatorInput', () => {
+  it.each([
+    ['', ''],
+    ['g', 'G'],
+    ['gb', 'GB'],
+    ['gbr', 'GBR-'],
+    ['gbro', 'GBR-O'],
+    ['gbrop', 'GBR-OP-'],
+    ['gbropsample00test', 'GBR-OP-SAMPLE00TEST'],
+    ['GBR-OP-SAMPLE00TEST', 'GBR-OP-SAMPLE00TEST'],
+    [' gbr op sample 00 test ', 'GBR-OP-SAMPLE00TEST'],
+    ['GBR–OP–SAMPLE00TEST', 'GBR-OP-SAMPLE00TEST'],
+  ])('types or pastes %j as %j', (raw, out) => {
+    expect(formatOperatorInput(raw)).toBe(out);
   });
-  it('splits other input on commas and spaces', () => {
-    expect(splitOperatorInput('abc123def, xyz987654')).toEqual(['ABC123DEF', 'XYZ987654']);
+  it('adds the prefix when only the 12 characters are given', () => {
+    expect(formatOperatorInput('sample00test')).toBe('GBR-OP-SAMPLE00TEST');
+    expect(formatOperatorInput('x')).toBe('GBR-OP-X');
+  });
+  it('drops unwanted characters and anything past 12 characters', () => {
+    expect(formatOperatorInput('Operator ID: GBR-OP-SAMPLE00TEST (expires 2027)')).toBe('GBR-OP-SAMPLE00TEST');
+    expect(formatOperatorInput('GBR-OP-SAMPLE00TEST-ABC')).toBe('GBR-OP-SAMPLE00TEST');
+    expect(formatOperatorInput('@#!*')).toBe('');
+  });
+  it('leaves flyer IDs out', () => {
+    expect(looksLikeFlyerId('gbr-rp-sampleALEX01')).toBe(true);
+    expect(formatOperatorInput('GBR-RP-SAMPLEALEX01')).toBe('');
+    expect(looksLikeFlyerId('GBR-OP-SAMPLE00TEST')).toBe(false);
+  });
+  it('counts the characters still missing', () => {
+    expect(operatorCharsLeft('')).toBe(12);
+    expect(operatorCharsLeft('GBR-')).toBe(12);
+    expect(operatorCharsLeft('GBR-OP-SAMP')).toBe(8);
+    expect(operatorCharsLeft('GBR-OP-SAMPLE00TEST')).toBe(0);
   });
 });
 
