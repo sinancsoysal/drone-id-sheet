@@ -1,14 +1,19 @@
-import type { Config } from '@netlify/functions';
+import type { Config, Context } from '@netlify/functions';
 import { PDFDocument } from 'pdf-lib';
+import type Stripe from 'stripe';
 import { checkOperatorId } from '../../src/lib/ids';
-import { PRICING, quote } from '../../src/lib/pricing';
+import { MAX_CARD_UPLOAD_BYTES, PRICING, quote } from '../../src/lib/pricing';
 import { mailConfigured } from '../lib/notify';
-import { cardKey, json, newOrderId, orders, saveOrder, stripe, type Order } from '../lib/orders';
+import { cardKey, deleteCards, deleteOrder, json, newOrderId, orders, saveOrder, stripe, type Order } from '../lib/orders';
+import { CHECKOUT_LIMIT, limitRequest } from '../lib/rate-limit';
 
-const MAX_CARD_BYTES = 1_500_000;
+// the browser keeps each card's image under MAX_CARD_UPLOAD_BYTES; this leaves room for the PDF around it
+const MAX_CARD_BYTES = MAX_CARD_UPLOAD_BYTES + 100_000;
 
-export default async (req: Request) => {
+export default async (req: Request, context?: Context) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const limited = await limitRequest(req, context, CHECKOUT_LIMIT);
+  if (limited) return limited;
   const client = stripe();
   // without email there would be no way to hear about paid orders
   if (!client || !mailConfigured()) return json({ error: 'Ordering is not set up yet. You can still download the PDF for free.' }, 503);
@@ -19,11 +24,13 @@ export default async (req: Request) => {
   } catch {
     return json({ error: 'Invalid request' }, 400);
   }
-  const rawCards = Array.isArray(body.cards) ? body.cards : [];
-  const rawIds = Array.isArray(body.operatorIds) ? body.operatorIds : [];
+  const rawCards = Array.isArray(body?.cards) ? body.cards : [];
+  const rawIds = Array.isArray(body?.operatorIds) ? body.operatorIds : [];
   if (!rawCards.every((c) => typeof c === 'string') || !rawIds.every((c) => typeof c === 'string')) {
     return json({ error: 'Invalid request' }, 400);
   }
+  // the page never sends more than an order can hold, so a longer list isn't worth checking one by one
+  if (rawIds.length > PRICING.maxLabelSets) return json({ error: `Up to ${PRICING.maxLabelSets} operator IDs per order` }, 400);
 
   const operatorIds: string[] = [];
   for (const raw of rawIds as string[]) {
@@ -52,21 +59,26 @@ export default async (req: Request) => {
     cards.push(bytes);
   }
 
+  const order: Order = {
+    id: newOrderId(),
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+    cards: cards.length,
+    labelSets: operatorIds.length,
+    operatorIds,
+    totalPence: q.totalPence,
+  };
+  let session: Stripe.Checkout.Session | undefined;
   try {
-    const order: Order = {
-      id: newOrderId(),
-      createdAt: new Date().toISOString(),
-      status: 'pending',
-      cards: cards.length,
-      labelSets: operatorIds.length,
-      operatorIds,
-      totalPence: q.totalPence,
-    };
+    // the order is saved before its uploads so anything stored can always be found and deleted
+    await saveOrder(order);
     const store = orders();
-    await Promise.all(cards.map((bytes, i) => store.set(cardKey(order.id, i), bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)));
+    const uploads = await Promise.allSettled(cards.map((bytes, i) => store.set(cardKey(order.id, i), bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)));
+    const failed = uploads.find((u) => u.status === 'rejected');
+    if (failed) throw failed.reason;
 
     const origin = new URL(req.url).origin;
-    const session = await client.checkout.sessions.create({
+    session = await client.checkout.sessions.create({
       mode: 'payment',
       client_reference_id: order.id,
       metadata: { orderId: order.id },
@@ -86,8 +98,21 @@ export default async (req: Request) => {
   } catch (e) {
     // never send Stripe or storage errors (and their stack traces) to the browser
     console.error('Checkout failed', e);
+    await discard(order, client, session);
     return json({ error: 'Ordering failed. Please try again in a few minutes.' }, 502);
   }
 };
+
+/** Undoes a checkout that failed part way, so its uploads aren't left on the server. */
+async function discard(order: Order, client: Stripe, session?: Stripe.Checkout.Session) {
+  // the customer never got the payment link, but it must not stay payable either
+  if (session) await client.checkout.sessions.expire(session.id).catch((e) => console.error(`Could not expire ${session.id}`, e));
+  try {
+    await deleteCards(order);
+    await deleteOrder(order.id);
+  } catch (e) {
+    console.error(`Could not delete the uploads of ${order.id}`, e);
+  }
+}
 
 export const config: Config = { path: '/api/checkout' };

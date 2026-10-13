@@ -9,7 +9,7 @@ Turn UK CAA **flyer ID** and **operator ID** documents into one printable A4 she
 
 ## How it works
 
-1. Drop in flyer ID and operator ID PDFs from [register-drones.caa.co.uk](https://register-drones.caa.co.uk), or type an operator ID from any country (up to 24 characters, the longest that still prints at least 3.3 mm tall on the smallest label). You can add several people's IDs.
+1. Drop in flyer ID and operator ID PDFs from [register-drones.caa.co.uk](https://register-drones.caa.co.uk), or type an operator ID from any country (up to 24 characters, the longest that still prints at least 3.3 mm tall on the smallest label, in the alphabets the label font has: Latin, Greek, Cyrillic, Armenian and Georgian). You can add several people's IDs.
 2. The page reads the IDs with [pdf.js](https://mozilla.github.io/pdf.js/), finds each card on the page and crops it, even when the browser printed headers and footers around it.
 3. [pdf-lib](https://pdf-lib.js.org/) builds the sheet. Cards keep their original quality. Each operator ID gets 9 labels in 3 sizes, with characters at least 3.3 mm tall, above the CAA's 3 mm minimum. The layout flows onto more pages when needed.
 
@@ -112,7 +112,9 @@ When Stripe confirms a payment, the webhook emails `ORDER_EMAIL_TO` through Rese
 - `Reply-To` set to the customer, so you can reply to them directly
 - the print file `DIS-XXXXXXX.pdf` attached: cards on the first page(s), for 250 gsm card, laminating and trimming; stickers on the following page(s), for white waterproof vinyl, cut along the label outlines
 
-The uploaded card images and operator IDs are deleted from Netlify Blobs once the email is sent. If sending fails, the webhook returns an error and Stripe retries it later, so no order is lost. Each order uses a Resend idempotency key, so a retry can't send the same email twice. If a checkout isn't finished, its uploads are deleted when the Stripe session expires (after 1 hour).
+The uploaded card images and operator IDs are deleted from Netlify Blobs once the email is sent. If sending fails, the webhook returns an error and Stripe retries it later, so no order is lost. Each order uses a Resend idempotency key, so a retry can't send the same email twice. If a checkout isn't finished, its uploads are deleted when the Stripe session expires (after 1 hour); if it fails before reaching Stripe, they're deleted straight away.
+
+The checkout and order status functions are rate limited per IP address (10 checkouts an hour, 30 status checks per 10 minutes, see `netlify/lib/rate-limit.ts`). The counts are kept in the `rate-limits` Blobs store under a hash of the address.
 
 ## Privacy
 

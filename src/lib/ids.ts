@@ -1,4 +1,5 @@
 /** Parsing and validation of flyer IDs and operator IDs. */
+import { LABEL_CHAR_RANGES } from './label-chars';
 
 export const FLYER_ID_RE = /GBR-RP-[A-Z0-9]{12}/;
 export const OPERATOR_ID_RE = /GBR-OP-[A-Z0-9]{12}/g;
@@ -23,9 +24,15 @@ export const OPERATOR_BODY_LENGTH = 12;
 /** Longest operator ID that still prints at least 3.3 mm tall on the smallest label. */
 export const OPERATOR_MAX_LENGTH = 24;
 const PREFIX_LETTERS = 'GBROP';
-/** Letters and numbers in any alphabet, plus the separators IDs are written with. */
-const NOT_ALLOWED = /[^\p{L}\p{N} ./-]/gu;
-const ONLY_ALLOWED = /^[\p{L}\p{N} ./-]+$/u;
+/** Letters and numbers the label font has, plus the separators IDs are written with. */
+const PRINTABLE = LABEL_CHAR_RANGES.map(([a, b]) => (a === b ? `\\u{${a.toString(16)}}` : `\\u{${a.toString(16)}}-\\u{${b.toString(16)}}`)).join('') + ' ./-';
+const NOT_ALLOWED = new RegExp(`[^${PRINTABLE}]`, 'gu');
+const ONLY_ALLOWED = new RegExp(`^[${PRINTABLE}]+$`, 'u');
+
+/** Letters and numbers in the text that the label font can't print, e.g. Chinese or Arabic. */
+export function unprintableLetters(raw: string): string[] {
+  return [...new Set([...raw].filter((ch) => /[\p{L}\p{N}]/u.test(ch) && !ONLY_ALLOWED.test(ch)))];
+}
 
 /**
  * Tidies an operator ID without changing it: typographic dashes become hyphens,
@@ -61,7 +68,9 @@ export function checkOperatorId(raw: string): OperatorCheck {
     return { ok: false, id, message: `${id} is too long. Operator IDs can have up to ${OPERATOR_MAX_LENGTH} characters.` };
   }
   if (!ONLY_ALLOWED.test(id)) {
-    return { ok: false, id, message: `${id} has characters that can't be printed. Use letters, numbers and dashes.` };
+    const letters = unprintableLetters(id);
+    const which = letters.length ? ` (${letters.join(' ')})` : '';
+    return { ok: false, id, message: `${id} has characters that can't be printed on the labels${which}. Use letters, numbers and dashes.` };
   }
   return { ok: true, id };
 }
@@ -69,8 +78,8 @@ export function checkOperatorId(raw: string): OperatorCheck {
 /**
  * Cleans up what is typed or pasted into the operator ID box. UK IDs are kept in
  * the GBR-OP-XXXXXXXXXXXX template: capitals, dashes added, at most 12
- * characters after the prefix. Other IDs keep what was typed, without symbols
- * and up to OPERATOR_MAX_LENGTH characters.
+ * characters after the prefix. Other IDs keep what was typed, without symbols or
+ * letters the label font can't print, up to OPERATOR_MAX_LENGTH characters.
  */
 export function formatOperatorInput(raw: string): string {
   if (looksLikeFlyerId(raw)) return '';

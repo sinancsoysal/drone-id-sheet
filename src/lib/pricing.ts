@@ -6,10 +6,18 @@ export const PRICING = {
   basePence: 499,
   extraCardPence: 149,
   extraLabelSetPence: 99,
-  maxCards: 8,
+  maxCards: 6,
   maxLabelSets: 8,
   delivery: 'Royal Mail 2nd Class, UK addresses',
 } as const;
+
+/**
+ * Most one card may take in a print order. The browser sends cards as base64 in
+ * JSON, so maxCards of them must stay under Netlify's 6 MB request limit.
+ */
+export const MAX_CARD_UPLOAD_BYTES = 600_000;
+/** Largest order request the browser sends, leaving room under Netlify's 6 MB. */
+export const MAX_ORDER_REQUEST_BYTES = 5_500_000;
 
 export interface QuoteLine {
   description: string;

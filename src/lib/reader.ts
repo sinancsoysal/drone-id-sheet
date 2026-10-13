@@ -7,6 +7,8 @@ import { PDFDocument } from 'pdf-lib';
 import { findCardBox } from './bbox';
 import { cropToCard, type PdfBox } from './crop';
 import { findOperatorIds, parseFlyerLines, type FlyerDetails } from './ids';
+import { CARD_WIDTH } from './layout';
+import { MAX_CARD_UPLOAD_BYTES } from './pricing';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -23,6 +25,10 @@ const open = (data: Uint8Array) =>
 
 const MAX_PAGES = 6;
 const DETECT_SCALE = 2;
+/** Cards are printed CARD_WIDTH mm wide; 600 dpi at that size is sharp on any printer. */
+const CARD_PIXELS = Math.round((CARD_WIDTH / 25.4) * 600);
+/** Photos are scaled down to this many pixels on the long side; phone cameras far exceed what a card needs. */
+const MAX_PHOTO_PIXELS = 3000;
 
 export interface CardItem {
   key: string;
@@ -137,7 +143,7 @@ async function extractCard(page: pdfjs.PDFPageProxy, bytes: Uint8Array, pageInde
     pdf = await cropToCard(bytes, pageIndex, box);
   } catch {
     // pdf-lib can't open some PDFs; fall back to a high resolution image of the card
-    pdf = await rasterCard(page, box);
+    pdf = await rasterCard(page, box, Infinity);
   }
 
   const w = px.x1 - px.x0, h = px.y1 - px.y0;
@@ -148,9 +154,13 @@ async function extractCard(page: pdfjs.PDFPageProxy, bytes: Uint8Array, pageInde
   return { pdf, aspect: h / w, thumb: thumb.toDataURL('image/jpeg', 0.85) };
 }
 
-/** Renders a region of a page to a JPEG and wraps it in a PDF of the same physical size. */
-async function rasterCard(page: pdfjs.PDFPageProxy, box: PdfBox, dpi = 600): Promise<Uint8Array> {
-  const scale = dpi / 72;
+/**
+ * Renders a region of a page to a JPEG, CARD_PIXELS wide whatever the size of the
+ * source, and wraps it in a PDF of the same physical size.
+ */
+async function rasterCard(page: pdfjs.PDFPageProxy, box: PdfBox, maxBytes: number): Promise<Uint8Array> {
+  // no card is twice as tall as it is wide, so a tall page isn't drawn any bigger than that
+  const scale = Math.min(CARD_PIXELS / (box.right - box.left), (2 * CARD_PIXELS) / (box.top - box.bottom));
   const viewport = page.getViewport({ scale });
   const [vx0, vy0] = viewport.convertToViewportPoint(box.left, box.top);
   const [vx1, vy1] = viewport.convertToViewportPoint(box.right, box.bottom);
@@ -164,38 +174,47 @@ async function rasterCard(page: pdfjs.PDFPageProxy, box: PdfBox, dpi = 600): Pro
     canvas: null, canvasContext: ctx, viewport,
     transform: [1, 0, 0, 1, -Math.min(vx0, vx1), -Math.min(vy0, vy1)],
   }).promise;
-  return jpegPdf(canvas, box.right - box.left, box.top - box.bottom);
+  return jpegPdf(canvas, box.right - box.left, box.top - box.bottom, maxBytes);
 }
 
-async function jpegPdf(canvas: HTMLCanvasElement, widthPt: number, heightPt: number): Promise<Uint8Array> {
-  const blob = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('encode'))), 'image/jpeg', 0.9));
+/** Lower JPEG qualities are only tried for busy images, such as photos, that come out too large. */
+const QUALITIES = [0.9, 0.8, 0.7, 0.6, 0.5];
+
+async function jpegPdf(canvas: HTMLCanvasElement, widthPt: number, heightPt: number, maxBytes: number): Promise<Uint8Array> {
+  let blob: Blob | undefined;
+  for (const quality of QUALITIES) {
+    blob = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('encode'))), 'image/jpeg', quality));
+    if (blob.size <= maxBytes) break;
+  }
   const out = await PDFDocument.create();
-  const img = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+  const img = await out.embedJpg(new Uint8Array(await blob!.arrayBuffer()));
   out.addPage([widthPt, heightPt]).drawImage(img, { x: 0, y: 0, width: widthPt, height: heightPt });
   return out.save();
 }
 
-/** Lighter copy of a card for print orders: a 600 dpi JPEG in a PDF. */
+/** Lighter copy of a card for print orders: a 600 dpi JPEG in a PDF, at most MAX_CARD_UPLOAD_BYTES of image. */
 export async function cardForUpload(card: CardItem): Promise<Uint8Array> {
   const task = open(card.pdf);
   const page = await (await task.promise).getPage(1);
   const [x0, y0, x1, y1] = page.view;
-  const pdf = await rasterCard(page, { left: x0, bottom: y0, right: x1, top: y1 });
+  const pdf = await rasterCard(page, { left: x0, bottom: y0, right: x1, top: y1 }, MAX_CARD_UPLOAD_BYTES);
   await task.destroy();
   return pdf;
 }
 
 async function imageToPdf(file: File): Promise<Uint8Array> {
   const bitmap = await createImageBitmap(file);
+  // a 48 MP photo is bigger than the canvases phone browsers allow
+  const shrink = Math.min(1, MAX_PHOTO_PIXELS / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0);
+  canvas.width = Math.round(bitmap.width * shrink);
+  canvas.height = Math.round(bitmap.height * shrink);
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('encode'))), 'image/png'));
   const out = await PDFDocument.create();
   const img = await out.embedPng(new Uint8Array(await blob.arrayBuffer()));
   // treat the image as 150 dpi; the sheet scales cards to a fixed width anyway
-  const w = (bitmap.width * 72) / 150, h = (bitmap.height * 72) / 150;
+  const w = (canvas.width * 72) / 150, h = (canvas.height * 72) / 150;
   out.addPage([w, h]).drawImage(img, { x: 0, y: 0, width: w, height: h });
   return out.save();
 }

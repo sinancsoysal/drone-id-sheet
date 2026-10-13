@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OPERATOR_MAX_LENGTH, checkOperatorId, findOperatorIds, formatOperatorInput, looksLikeFlyerId, operatorCharsLeft, parseFlyerLines, splitForTwoLines } from '../../src/lib/ids';
+import { OPERATOR_MAX_LENGTH, checkOperatorId, findOperatorIds, formatOperatorInput, looksLikeFlyerId, operatorCharsLeft, parseFlyerLines, splitForTwoLines, unprintableLetters } from '../../src/lib/ids';
 
 describe('checkOperatorId', () => {
   it('accepts UK operator IDs and normalises case and spaces', () => {
@@ -28,6 +28,22 @@ describe('checkOperatorId', () => {
     expect(r.ok).toBe(false);
     expect(r.message).toMatch(/too long/);
   });
+  it('accepts the alphabets the label font has', () => {
+    for (const id of ['ΑΒΓ-12345', 'ОПЕРАТОР-77', 'ÅÄÖ-ÉÈÇ-123', 'ŁÓDŹ-ĞŞİ-9', 'ԱԲԳ-12', 'აბგ-12']) {
+      expect(checkOperatorId(id)).toEqual({ ok: true, id });
+    }
+  });
+  it('rejects letters the label font cannot print, and names them', () => {
+    const r = checkOperatorId('東京ドローン123');
+    expect(r.ok).toBe(false);
+    expect(r.message).toContain("can't be printed on the labels (東 京 ド ロ ー ン)");
+    expect(checkOperatorId('드론-123').ok).toBe(false);
+    expect(checkOperatorId('ड्रोन123').ok).toBe(false);
+  });
+  it('rejects right-to-left scripts, which the labels would print back to front', () => {
+    expect(checkOperatorId('مشغل-123').ok).toBe(false);
+    expect(checkOperatorId('מפעיל-123').ok).toBe(false);
+  });
   it('rejects empty input and symbols', () => {
     expect(checkOperatorId('').ok).toBe(false);
     expect(checkOperatorId(' - ').ok).toBe(false);
@@ -55,6 +71,14 @@ describe('formatOperatorInput', () => {
     expect(formatOperatorInput(' - FRA  12')).toBe('FRA 12');
     expect(formatOperatorInput('Z'.repeat(40))).toBe('Z'.repeat(OPERATOR_MAX_LENGTH));
     expect(formatOperatorInput('@#!*')).toBe('');
+  });
+  it('drops letters the label font cannot print', () => {
+    expect(formatOperatorInput('FIN東87')).toBe('FIN87');
+    expect(formatOperatorInput('ΑΒΓ-1')).toBe('ΑΒΓ-1');
+  });
+  it('lists the letters the label font cannot print', () => {
+    expect(unprintableLetters('FIN東87東京!')).toEqual(['東', '京']);
+    expect(unprintableLetters('ΑΒΓ-1 é')).toEqual([]);
   });
   it('drops text around a pasted UK ID and anything past 12 characters', () => {
     expect(formatOperatorInput('Operator ID: GBR-OP-SAMPLE00TEST (expires 2027)')).toBe('GBR-OP-SAMPLE00TEST');

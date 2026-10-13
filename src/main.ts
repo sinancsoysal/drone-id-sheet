@@ -1,5 +1,5 @@
-import { OPERATOR_MAX_LENGTH, checkOperatorId, findOperatorIds, formatOperatorInput, isUkOperatorInput, looksLikeFlyerId, operatorCharsLeft } from './lib/ids';
-import { formatGBP, PRICING, quote } from './lib/pricing';
+import { OPERATOR_MAX_LENGTH, checkOperatorId, findOperatorIds, formatOperatorInput, isUkOperatorInput, looksLikeFlyerId, operatorCharsLeft, unprintableLetters } from './lib/ids';
+import { formatGBP, MAX_ORDER_REQUEST_BYTES, PRICING, quote } from './lib/pricing';
 import type { CardItem } from './lib/reader';
 
 // pdf.js and pdf-lib are large, so load them only once someone starts adding files
@@ -23,8 +23,15 @@ document.querySelectorAll('[data-price-base]').forEach((el) => (el.textContent =
 
 function monoFont() {
   fontBytes ??= fetch(`${import.meta.env.BASE_URL}fonts/DejaVuSansMono-Bold.ttf`)
-    .then((r) => r.arrayBuffer())
-    .then((b) => new Uint8Array(b));
+    .then((r) => {
+      if (!r.ok) throw new Error(`Font download failed: ${r.status}`);
+      return r.arrayBuffer();
+    })
+    .then((b) => new Uint8Array(b))
+    .catch((e) => {
+      fontBytes = null; // try again next time rather than keep the failure
+      throw e;
+    });
   return fontBytes;
 }
 
@@ -161,6 +168,8 @@ opInput.addEventListener('input', (e) => {
     }
     lastOp = next;
     refreshOpHint();
+    const dropped = unprintableLetters(raw);
+    if (dropped.length) opHint.textContent = `The labels can't print ${dropped.join(' ')}, so ${dropped.length === 1 ? 'it was' : 'they were'} left out.`;
     return;
   }
   let before = alnum(raw.slice(0, caretAt));
@@ -298,28 +307,35 @@ async function refreshSheet() {
     return;
   }
   setWorking(true);
-  const { buildSheet, renderPreview } = await engine();
-  const bytes = await buildSheet({
-    cards: state.cards.map((c) => c.pdf),
-    operatorIds: state.operators.map((o) => o.id),
-    monoFont: await monoFont(),
-  });
-  if (mine !== generation) return;
-  sheet = bytes;
-  const width = Math.min(preview.clientWidth - 32, 520);
-  const canvases = await renderPreview(bytes, Math.max(width, 240));
-  if (mine !== generation) return;
-  canvases.forEach((c, i) => c.setAttribute('aria-label', `Preview of page ${i + 1}`));
-  preview.replaceChildren(...canvases);
-  if (!reading) setWorking(false);
+  try {
+    const { buildSheet, renderPreview } = await engine();
+    const bytes = await buildSheet({
+      cards: state.cards.map((c) => c.pdf),
+      operatorIds: state.operators.map((o) => o.id),
+      monoFont: await monoFont(),
+    });
+    if (mine !== generation) return;
+    sheet = bytes;
+    const width = Math.min(preview.clientWidth - 32, 520);
+    const canvases = await renderPreview(bytes, Math.max(width, 240));
+    if (mine !== generation) return;
+    canvases.forEach((c, i) => c.setAttribute('aria-label', `Preview of page ${i + 1}`));
+    preview.replaceChildren(...canvases);
+    if (!reading) setWorking(false);
+  } catch (e) {
+    if (mine !== generation) return;
+    console.error(e);
+    // a preview that fails to draw still leaves a sheet to download
+    if (!sheet) say('Something went wrong making the sheet. Try removing the last file you added.', 'error');
+    preview.replaceChildren();
+    if (!reading) setWorking(false);
+    downloadBtn.disabled = !sheet;
+  }
 }
 
-downloadBtn.addEventListener('click', async () => {
-  const bytes = sheet ?? (await (await engine()).buildSheet({
-    cards: state.cards.map((c) => c.pdf),
-    operatorIds: state.operators.map((o) => o.id),
-    monoFont: await monoFont(),
-  }));
+downloadBtn.addEventListener('click', () => {
+  if (!sheet) return;
+  const bytes = sheet;
   const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
   const a = document.createElement('a');
   a.href = url;
@@ -340,7 +356,7 @@ orderBtn.addEventListener('click', async () => {
     const { cardForUpload } = await engine();
     const cards = await Promise.all(state.cards.map(async (c) => toBase64(await cardForUpload(c))));
     const body = JSON.stringify({ cards, operatorIds: state.operators.map((o) => o.id) });
-    if (body.length > 5_500_000) throw new Error('These files are too large to upload together. Try ordering fewer cards at a time.');
+    if (body.length > MAX_ORDER_REQUEST_BYTES) throw new Error('These files are too large to upload together. Try ordering fewer cards at a time.');
     const res = await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) throw new Error(data.error || 'Ordering is not available right now. Please try again later.');
@@ -351,6 +367,11 @@ orderBtn.addEventListener('click', async () => {
     orderBtn.disabled = false;
     orderBtn.textContent = label;
   }
+});
+
+// coming back from Stripe with the Back button restores the page as it was left: "Preparing your order…"
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) renderQuote();
 });
 
 function toBase64(bytes: Uint8Array): string {

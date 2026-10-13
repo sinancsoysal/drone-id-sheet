@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatGBP, PRICING, quote } from '../../src/lib/pricing';
+import { formatGBP, MAX_CARD_UPLOAD_BYTES, MAX_ORDER_REQUEST_BYTES, PRICING, quote } from '../../src/lib/pricing';
 
 describe('quote', () => {
   it('charges the base price for one card and one sticker set', () => {
@@ -24,5 +24,16 @@ describe('formatGBP', () => {
   it('formats pence', () => {
     expect(formatGBP(499)).toBe('£4.99');
     expect(formatGBP(1000)).toBe('£10.00');
+  });
+});
+
+describe('upload limits', () => {
+  it('a full order of cards fits the request limit', () => {
+    // base64 makes every 3 bytes 4; 1000 bytes per card covers the PDF wrapper and JSON
+    const fullOrder = PRICING.maxCards * (Math.ceil((MAX_CARD_UPLOAD_BYTES + 1000) / 3) * 4) + 10_000;
+    expect(fullOrder).toBeLessThan(MAX_ORDER_REQUEST_BYTES);
+  });
+  it("leaves room under Netlify's 6 MB request limit", () => {
+    expect(MAX_ORDER_REQUEST_BYTES).toBeLessThan(6 * 1024 * 1024 * 0.9);
   });
 });

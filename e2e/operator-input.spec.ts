@@ -40,6 +40,16 @@ test('takes operator IDs from other countries as typed', async ({ page }) => {
   await expect(page.getByTestId('operator-item')).toContainText('FIN87astrdge12k8');
 });
 
+test('leaves out letters the labels cannot print and says so', async ({ page }) => {
+  await input(page).pressSequentially('FIN87');
+  await input(page).pressSequentially('東');
+  await expect(input(page)).toHaveValue('FIN87');
+  await expect(page.locator('#op-hint')).toHaveText("The labels can't print 東, so it was left out.");
+  await input(page).pressSequentially('ΑΒ');
+  await expect(input(page)).toHaveValue('FIN87ΑΒ');
+  await expect(page.locator('#op-hint')).toHaveText('Press Add or Enter when it matches your registration.');
+});
+
 test('stops at the longest ID that fits on a label', async ({ page }) => {
   await paste(page, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123');
   await expect(input(page)).toHaveValue('ABCDEFGHIJKLMNOPQRSTUVWX');

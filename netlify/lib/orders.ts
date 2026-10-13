@@ -41,6 +41,10 @@ export async function saveOrder(order: Order) {
   await orders().setJSON(orderKey(order.id), order);
 }
 
+export async function deleteOrder(id: string) {
+  await orders().delete(orderKey(id));
+}
+
 export async function deleteCards(order: Order) {
   const store = orders();
   await Promise.all(Array.from({ length: order.cards }, (_, i) => store.delete(cardKey(order.id, i))));

@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "fixtures": "tsx scripts/make-fixtures.ts",
+    "label-chars": "tsx scripts/make-label-chars.ts",
     "social": "tsx scripts/make-social.ts",
     "guide": "UPDATE_GUIDE=1 playwright test e2e/guide.spec.ts --project=desktop",
     "dev:netlify": "netlify dev",
