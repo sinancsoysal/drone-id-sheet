@@ -1,4 +1,4 @@
-/** Parsing and validation of UK CAA flyer IDs and operator IDs. */
+/** Parsing and validation of flyer IDs and operator IDs. */
 
 export const FLYER_ID_RE = /GBR-RP-[A-Z0-9]{12}/;
 export const OPERATOR_ID_RE = /GBR-OP-[A-Z0-9]{12}/g;
@@ -20,49 +20,81 @@ export interface OperatorCheck {
 
 export const OPERATOR_PREFIX = 'GBR-OP-';
 export const OPERATOR_BODY_LENGTH = 12;
+/** Longest operator ID that still prints at least 3.3 mm tall on the smallest label. */
+export const OPERATOR_MAX_LENGTH = 24;
 const PREFIX_LETTERS = 'GBROP';
+/** Letters and numbers in any alphabet, plus the separators IDs are written with. */
+const NOT_ALLOWED = /[^\p{L}\p{N} ./-]/gu;
+const ONLY_ALLOWED = /^[\p{L}\p{N} ./-]+$/u;
 
+/**
+ * Tidies an operator ID without changing it: typographic dashes become hyphens,
+ * spaces are collapsed. UK IDs are put in capitals.
+ */
 export function normaliseOperatorId(raw: string): string {
-  return raw.toUpperCase().replace(/\s+/g, '').replace(/[‐‑–—]/g, '-');
+  const id = raw.replace(/[‐‑–—]/g, '-').replace(/\s+/g, ' ').trim();
+  return isUkOperatorInput(id) ? id.toUpperCase().replace(/\s+/g, '') : id;
 }
 
-/** Only complete UK operator IDs are accepted: GBR-OP- and 12 letters or numbers. */
-export function checkOperatorId(raw: string): OperatorCheck {
-  const id = normaliseOperatorId(raw);
-  if (!id) return { ok: false, id, message: 'Enter an operator ID.' };
-  if (UK_OPERATOR_RE.test(id)) return { ok: true, id };
-  if (/^GBR-?RP/.test(id)) {
-    return { ok: false, id, message: `${id} is a flyer ID. Operator IDs start with GBR-OP-. Upload the flyer ID PDF instead.` };
-  }
-  return { ok: false, id, message: `${id} isn't a UK operator ID. It should be GBR-OP- followed by 12 letters or numbers.` };
+/** True when the text is (the start of) a UK operator ID, which gets the GBR-OP- template. */
+export function isUkOperatorInput(raw: string): boolean {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return clean.includes(PREFIX_LETTERS) || (clean.length >= 3 && PREFIX_LETTERS.startsWith(clean));
 }
 
 /**
- * Turns whatever is typed or pasted into the GBR-OP-XXXXXXXXXXXX template:
- * capitals only, other characters dropped, dashes added, at most 12 characters
- * after the prefix. The prefix can be typed, pasted or left out.
+ * Operator IDs differ from country to country, so anything up to
+ * OPERATOR_MAX_LENGTH characters is accepted. Only UK IDs, which start with
+ * GBR-OP-, must have their full 12 characters after the prefix.
+ */
+export function checkOperatorId(raw: string): OperatorCheck {
+  const id = normaliseOperatorId(raw);
+  if (!/[\p{L}\p{N}]/u.test(id)) return { ok: false, id, message: 'Enter an operator ID.' };
+  if (looksLikeFlyerId(id)) {
+    return { ok: false, id, message: `${id} is a flyer ID. Upload the flyer ID PDF instead.` };
+  }
+  if (isUkOperatorInput(id)) {
+    if (UK_OPERATOR_RE.test(id)) return { ok: true, id };
+    return { ok: false, id, message: `${id} isn't a complete UK operator ID. It should be GBR-OP- followed by 12 letters or numbers.` };
+  }
+  if (id.length > OPERATOR_MAX_LENGTH) {
+    return { ok: false, id, message: `${id} is too long. Operator IDs can have up to ${OPERATOR_MAX_LENGTH} characters.` };
+  }
+  if (!ONLY_ALLOWED.test(id)) {
+    return { ok: false, id, message: `${id} has characters that can't be printed. Use letters, numbers and dashes.` };
+  }
+  return { ok: true, id };
+}
+
+/**
+ * Cleans up what is typed or pasted into the operator ID box. UK IDs are kept in
+ * the GBR-OP-XXXXXXXXXXXX template: capitals, dashes added, at most 12
+ * characters after the prefix. Other IDs keep what was typed, without symbols
+ * and up to OPERATOR_MAX_LENGTH characters.
  */
 export function formatOperatorInput(raw: string): string {
+  if (looksLikeFlyerId(raw)) return '';
+  if (!isUkOperatorInput(raw)) {
+    return raw.replace(/[‐‑–—]/g, '-').replace(NOT_ALLOWED, '').replace(/\s+/g, ' ').replace(/^[ ./-]+/, '').slice(0, OPERATOR_MAX_LENGTH);
+  }
   let clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (!clean || looksLikeFlyerId(raw)) return '';
   // start at the last prefix: pasted text like "Operator ID: GBR-OP-…", or an ID
   // pasted after a prefix that was already typed, must not end up as GBR-OP-GBROP…
   const at = clean.lastIndexOf(PREFIX_LETTERS);
   if (at > 0) clean = clean.slice(at);
-  if (PREFIX_LETTERS.startsWith(clean) && clean.length < PREFIX_LETTERS.length) {
-    // still typing the prefix: G, GB, GBR-, GBR-O
-    return clean.length >= 3 ? `GBR-${clean.slice(3)}` : clean;
+  if (clean.length < PREFIX_LETTERS.length) {
+    // still typing the prefix: GBR-, GBR-O
+    return `GBR-${clean.slice(3)}`;
   }
-  const body = clean.startsWith(PREFIX_LETTERS) ? clean.slice(PREFIX_LETTERS.length) : clean;
-  return OPERATOR_PREFIX + body.slice(0, OPERATOR_BODY_LENGTH);
+  return OPERATOR_PREFIX + clean.slice(PREFIX_LETTERS.length, PREFIX_LETTERS.length + OPERATOR_BODY_LENGTH);
 }
 
-/** True for text that starts like a flyer ID (GBR-RP-), which belongs in the file upload instead. */
+/** True for text that starts like a UK flyer ID (GBR-RP-), which belongs in the file upload instead. */
 export function looksLikeFlyerId(raw: string): boolean {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith('GBRRP');
 }
 
-/** How many characters are still missing from a formatted operator ID. */
+/** How many characters are still missing from a UK operator ID that is being typed. */
 export function operatorCharsLeft(formatted: string): number {
   const body = formatted.startsWith(OPERATOR_PREFIX) ? formatted.slice(OPERATOR_PREFIX.length) : '';
   return OPERATOR_BODY_LENGTH - body.length;
@@ -101,15 +133,15 @@ export function parseFlyerLines(lines: string[]): FlyerDetails {
 
 const DATE_RE = /^\d{1,2}\s+[A-Za-z]+\s+\d{4}$/;
 
-/** Splits an ID over two lines at the dash nearest the middle. */
+/** Splits an ID over two lines at the dash or space nearest the middle. */
 export function splitForTwoLines(id: string): [string, string] {
   const mid = id.length / 2;
   let best = -1;
   for (let i = 0; i < id.length; i++) {
-    if (id[i] === '-' && (best < 0 || Math.abs(i + 1 - mid) < Math.abs(best + 1 - mid))) best = i;
+    if ((id[i] === '-' || id[i] === ' ') && (best < 0 || Math.abs(i + 1 - mid) < Math.abs(best + 1 - mid))) best = i;
   }
   const at = best >= 0 ? best + 1 : Math.ceil(mid);
-  return [id.slice(0, at), id.slice(at)];
+  return [id.slice(0, at).trimEnd(), id.slice(at)];
 }
 
 function unique<T>(xs: T[]): T[] {

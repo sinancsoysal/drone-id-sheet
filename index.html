@@ -30,11 +30,11 @@
       <form id="op-form" class="op-form" novalidate>
         <label for="op-input">Or type or paste an operator ID</label>
         <div class="inline">
-          <input id="op-input" name="op" placeholder="GBR-OP-XXXXXXXXXXXX" inputmode="text" autocomplete="off"
-            autocapitalize="characters" spellcheck="false" pattern="GBR-OP-[A-Z0-9]{12}" aria-describedby="op-hint">
+          <input id="op-input" name="op" placeholder="e.g. GBR-OP-XXXXXXXXXXXX" inputmode="text" autocomplete="off"
+            autocapitalize="characters" spellcheck="false" aria-describedby="op-hint">
           <button type="submit" id="op-add" disabled>Add</button>
         </div>
-        <p id="op-hint" class="hint">GBR-OP- followed by 12 letters or numbers. Dashes are added for you.</p>
+        <p id="op-hint" class="hint">Exactly as it appears on your registration, up to 24 characters. UK IDs (GBR-OP-…) get their dashes added for you.</p>
       </form>
       <div id="busy" class="busy" hidden>Reading files…</div>
       <ul id="messages" class="messages" aria-live="polite"></ul>

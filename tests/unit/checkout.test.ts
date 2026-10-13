@@ -53,7 +53,16 @@ it('refuses orders until Stripe and email are configured', async () => {
   expect((await order()).status).toBe(503);
 });
 
-it('rejects IDs that are not UK operator IDs', async () => {
-  expect((await order(['hello'])).status).toBe(400);
+it('accepts operator IDs from other countries', async () => {
+  create.mockResolvedValue({ id: 'cs_test_2', url: 'https://checkout.stripe.com/c/pay/cs_test_2' });
+  const res = await order(['FIN87astrdge12k8']);
+  expect(res.status).toBe(200);
+  expect(blobs.get(`order/${(await res.json()).ref}`)).toMatchObject({ operatorIds: ['FIN87astrdge12k8'] });
+});
+
+it('rejects IDs that are too long to print, flyer IDs and incomplete UK IDs', async () => {
+  for (const id of ['X'.repeat(25), 'GBR-RP-SAMPLEALEX01', 'GBR-OP-SHORT', '<script>']) {
+    expect((await order([id])).status).toBe(400);
+  }
   expect(create).not.toHaveBeenCalled();
 });

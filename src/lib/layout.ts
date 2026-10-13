@@ -43,7 +43,12 @@ export function fitLabelText(id: string, size: LabelSize): LabelText {
   };
   const one = fit([id]);
   if (!spec.twoLine && one.capMm >= MIN_CAP_MM) return one;
-  const two = fit(splitForTwoLines(id));
+  let two = fit(splitForTwoLines(id));
+  if (two.capMm < MIN_CAP_MM) {
+    // splitting at a dash leaves one line too long: split in the middle instead
+    const even = fit([id.slice(0, Math.ceil(id.length / 2)), id.slice(Math.ceil(id.length / 2))]);
+    if (even.capMm > two.capMm) two = even;
+  }
   return two.capMm > one.capMm || spec.twoLine ? two : one;
 }
 

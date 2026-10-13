@@ -32,6 +32,13 @@ describe('buildSheet', () => {
     expect(pages[0].split('SAMPLE00TEST').length - 1).toBe(9);
   });
 
+  it('prints operator IDs from other countries as written', async () => {
+    const ids = ['FIN87astrdge12k8', 'ÅLAND-ØRE-12345', 'W'.repeat(24)];
+    const bytes = await buildSheet({ cards: [], operatorIds: ids, monoFont: font });
+    const text = (await pdfText(bytes)).join(' ').replace(/\s+/g, '');
+    for (const id of ids) expect(text).toContain(id.replace(/\s+/g, ''));
+  });
+
   it('crops the card to its own page size', async () => {
     const card = await cropToCard(fixture('sample-flyer-id-alex.pdf'), 0, CARD);
     const task = getDocument({ data: card.slice() });

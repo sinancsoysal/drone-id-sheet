@@ -9,7 +9,7 @@ Turn UK CAA **flyer ID** and **operator ID** documents into one printable A4 she
 
 ## How it works
 
-1. Drop in flyer ID and operator ID PDFs from [register-drones.caa.co.uk](https://register-drones.caa.co.uk), or type an operator ID. You can add several people's IDs.
+1. Drop in flyer ID and operator ID PDFs from [register-drones.caa.co.uk](https://register-drones.caa.co.uk), or type an operator ID from any country (up to 24 characters, the longest that still prints at least 3.3 mm tall on the smallest label). You can add several people's IDs.
 2. The page reads the IDs with [pdf.js](https://mozilla.github.io/pdf.js/), finds each card on the page and crops it, even when the browser printed headers and footers around it.
 3. [pdf-lib](https://pdf-lib.js.org/) builds the sheet. Cards keep their original quality. Each operator ID gets 9 labels in 3 sizes, with characters at least 3.3 mm tall, above the CAA's 3 mm minimum. The layout flows onto more pages when needed.
 

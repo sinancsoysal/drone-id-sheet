@@ -1,4 +1,4 @@
-import { checkOperatorId, findOperatorIds, formatOperatorInput, looksLikeFlyerId, operatorCharsLeft } from './lib/ids';
+import { OPERATOR_MAX_LENGTH, checkOperatorId, findOperatorIds, formatOperatorInput, isUkOperatorInput, looksLikeFlyerId, operatorCharsLeft } from './lib/ids';
 import { formatGBP, PRICING, quote } from './lib/pricing';
 import type { CardItem } from './lib/reader';
 
@@ -89,7 +89,7 @@ function addOperator(raw: string, quiet = false): boolean {
     say(check.message!, 'error');
     return false;
   }
-  if (state.operators.some((o) => o.id === check.id)) {
+  if (state.operators.some((o) => o.id.toUpperCase() === check.id.toUpperCase())) {
     if (!quiet) say(`${check.id} is already on the sheet.`);
     return true;
   }
@@ -109,11 +109,13 @@ drop.addEventListener('drop', (e) => {
   if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
 });
 
-// Operator ID box: keeps the value in the GBR-OP-XXXXXXXXXXXX template while typing or pasting
+// Operator ID box: UK IDs are kept in the GBR-OP-XXXXXXXXXXXX template while typing
+// or pasting; IDs from other countries are taken as typed, up to OPERATOR_MAX_LENGTH
 const opAdd = $<HTMLButtonElement>('op-add');
 const opHint = $('op-hint');
 const HINT = opHint.textContent!;
 const alnum = (s: string) => s.replace(/[^A-Za-z0-9]/g, '');
+const isUkId = (s: string) => isUkOperatorInput(s) && checkOperatorId(s).ok;
 
 /** Index just after the n-th letter or digit of a formatted value. */
 function caretAfter(value: string, n: number) {
@@ -126,20 +128,22 @@ function caretAfter(value: string, n: number) {
 }
 
 function refreshOpHint() {
-  const left = operatorCharsLeft(opInput.value);
-  const complete = checkOperatorId(opInput.value).ok;
+  const value = opInput.value;
+  const complete = checkOperatorId(value).ok;
+  const left = operatorCharsLeft(value);
   opAdd.disabled = !complete;
   opHint.classList.toggle('ready', complete);
-  opHint.textContent = !opInput.value ? HINT
-    : complete ? 'Complete. Press Add or Enter.'
-    : `${left} more letter${left === 1 ? '' : 's'} or number${left === 1 ? '' : 's'} after GBR-OP-`;
+  opHint.textContent = !value.trim() ? HINT
+    : isUkOperatorInput(value) ? (complete ? 'Complete. Press Add or Enter.' : `${left} more letter${left === 1 ? '' : 's'} or number${left === 1 ? '' : 's'} after GBR-OP-`)
+    : value.length >= OPERATOR_MAX_LENGTH ? `That's the most that fits on a label (${OPERATOR_MAX_LENGTH} characters). Press Add or Enter.`
+    : 'Press Add or Enter when it matches your registration.';
 }
 
 let lastOp = '';
 opInput.addEventListener('input', (e) => {
   const raw = opInput.value;
-  const atEnd = (opInput.selectionStart ?? raw.length) >= raw.length;
-  let before = alnum(raw.slice(0, opInput.selectionStart ?? raw.length));
+  const caretAt = opInput.selectionStart ?? raw.length;
+  const atEnd = caretAt >= raw.length;
   if (looksLikeFlyerId(raw)) {
     messages.replaceChildren();
     say('That looks like a flyer ID (GBR-RP-…). Add it by uploading the flyer ID PDF above.', 'error');
@@ -148,6 +152,18 @@ opInput.addEventListener('input', (e) => {
     return;
   }
   let next = formatOperatorInput(raw);
+  if (!isUkOperatorInput(raw)) {
+    // only unwanted characters are dropped, so the caret moves back by as many as went before it
+    const kept = formatOperatorInput(raw.slice(0, caretAt)).length;
+    if (next !== raw) {
+      opInput.value = next;
+      opInput.setSelectionRange(atEnd ? next.length : kept, atEnd ? next.length : kept);
+    }
+    lastOp = next;
+    refreshOpHint();
+    return;
+  }
+  let before = alnum(raw.slice(0, caretAt));
   if ((e as InputEvent).inputType?.startsWith('delete') && next === lastOp && before.length) {
     // only a dash was deleted: remove the character in front of it as well
     const chars = alnum(raw).split('');
@@ -155,22 +171,19 @@ opInput.addEventListener('input', (e) => {
     before = before.slice(0, -1);
     next = formatOperatorInput(chars.join(''));
   }
-  // the prefix was filled in for the user, so the caret moves past it
-  const added = alnum(next).length - alnum(raw).length;
-  if (added > 0 && !alnum(raw.toUpperCase()).startsWith('GBROP')) before += 'x'.repeat(added);
   opInput.value = lastOp = next;
   const caret = atEnd ? next.length : caretAfter(next, before.length);
   opInput.setSelectionRange(caret, caret);
   refreshOpHint();
-  if ((e as InputEvent).inputType === 'insertFromPaste' && checkOperatorId(next).ok) addTypedOperator();
+  if ((e as InputEvent).inputType === 'insertFromPaste' && isUkId(next)) addTypedOperator();
 });
 
 opInput.addEventListener('paste', (e) => {
   const text = e.clipboardData?.getData('text') ?? '';
   const ids = findOperatorIds(text);
   const whole = formatOperatorInput(text);
-  if (ids.length < 2 && !checkOperatorId(whole).ok) return; // partial paste: merge it with what's typed
-  // a complete ID replaces whatever is in the box; several IDs are all added
+  if (ids.length < 2 && !isUkId(whole)) return; // partial paste or another country's ID: merge it with what's typed
+  // a complete UK ID replaces whatever is in the box; several IDs are all added
   e.preventDefault();
   messages.replaceChildren();
   (ids.length > 1 ? ids : [whole]).forEach((id) => addOperator(id));

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { OPERATOR_MAX_LENGTH } from '../../src/lib/ids';
 import { fitLabelText, LABEL_SPECS, LABELS_PER_SET, layoutSheet, MIN_CAP_MM, PAGE, type Item, type LabelSize } from '../../src/lib/layout';
 
 const boxes = (items: Item[]) => items.filter((i): i is Extract<Item, { w: number }> => 'w' in i);
@@ -8,6 +9,11 @@ describe('fitLabelText', () => {
   it.each(sizes)('keeps UK IDs taller than 3 mm on %s labels', (size) => {
     const fit = fitLabelText('GBR-OP-SAMPLE00TEST', size);
     expect(fit.capMm).toBeGreaterThanOrEqual(MIN_CAP_MM);
+  });
+  it.each(sizes)('keeps the longest allowed ID taller than 3 mm on %s labels', (size) => {
+    for (const id of ['W'.repeat(OPERATOR_MAX_LENGTH), 'ABCDEF-GHIJKL-MNOPQR-ST', 'A-BCDEFGHIJKLMNOPQRSTUVW']) {
+      expect(fitLabelText(id.slice(0, OPERATOR_MAX_LENGTH), size).capMm).toBeGreaterThanOrEqual(MIN_CAP_MM);
+    }
   });
   it('uses one line on large labels and two on small ones', () => {
     expect(fitLabelText('GBR-OP-SAMPLE00TEST', 'L').lines).toHaveLength(1);

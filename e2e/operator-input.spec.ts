@@ -32,11 +32,27 @@ test('formats an ID typed by hand and adds the dashes', async ({ page }) => {
   await expect(input(page)).toHaveValue('');
 });
 
-test('fills in the prefix when only the 12 characters are typed', async ({ page }) => {
-  await input(page).pressSequentially('sample00test');
-  await expect(input(page)).toHaveValue('GBR-OP-SAMPLE00TEST');
+test('takes operator IDs from other countries as typed', async ({ page }) => {
+  await input(page).pressSequentially('FIN87astrdge12k8');
+  await expect(input(page)).toHaveValue('FIN87astrdge12k8');
+  await expect(addButton(page)).toBeEnabled();
   await addButton(page).click();
-  await expect(page.getByTestId('operator-item')).toHaveCount(1);
+  await expect(page.getByTestId('operator-item')).toContainText('FIN87astrdge12k8');
+});
+
+test('stops at the longest ID that fits on a label', async ({ page }) => {
+  await paste(page, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123');
+  await expect(input(page)).toHaveValue('ABCDEFGHIJKLMNOPQRSTUVWX');
+  await expect(page.locator('#op-hint')).toContainText('most that fits on a label');
+  await expect(page.getByTestId('operator-item')).toHaveCount(0);
+});
+
+test('a symbol typed in the middle is dropped without moving the caret to the end', async ({ page }) => {
+  await input(page).pressSequentially('FRA123');
+  await input(page).press('ArrowLeft');
+  await input(page).press('ArrowLeft');
+  await input(page).pressSequentially('#x');
+  await expect(input(page)).toHaveValue('FRA1x23');
 });
 
 test('backspace removes characters through the dashes', async ({ page }) => {
