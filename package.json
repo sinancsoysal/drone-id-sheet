@@ -1,5 +1,5 @@
 {
-  "name": "drone-id-sheet",
+  "name": "printdroneids",
   "version": "1.0.0",
   "description": "Turn UK CAA flyer ID and operator ID documents into a printable sheet of wallet cards and drone labels.",
   "scripts": {

@@ -22,7 +22,7 @@ export async function buildSheet(input: SheetInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setTitle(input.mode === 'production' ? `Drone ID order ${input.orderRef ?? ''}` : 'Drone ID sheet');
-  doc.setCreator('Drone ID Sheet');
+  doc.setCreator('Print Drone IDs');
   const fonts = {
     regular: await doc.embedFont(StandardFonts.Helvetica),
     bold: await doc.embedFont(StandardFonts.HelveticaBold),

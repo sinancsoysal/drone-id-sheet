@@ -19,7 +19,7 @@ RUN PW=$(node -p "require('/tmp/lock/package-lock.json').packages['node_modules/
 ARG NETLIFY_CLI_VERSION=27.12.0
 RUN npm install -g "netlify-cli@${NETLIFY_CLI_VERSION}" && npm cache clean --force
 
-RUN install -d -o node -g node /workspaces/drone-id-sheet/node_modules
+RUN install -d -o node -g node /workspaces/printdroneids/node_modules
 
 USER node
 # Claude Code (native installer, updates itself)

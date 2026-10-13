@@ -1,9 +1,9 @@
 {
-  "name": "Drone ID Sheet",
+  "name": "Print Drone IDs",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "runServices": ["app", "mailpit"],
-  "workspaceFolder": "/workspaces/drone-id-sheet",
+  "workspaceFolder": "/workspaces/printdroneids",
   "remoteUser": "node",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {

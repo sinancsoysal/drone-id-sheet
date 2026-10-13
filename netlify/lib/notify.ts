@@ -94,7 +94,7 @@ async function deliver(mail: Outgoing): Promise<void> {
         'idempotency-key': mail.idempotencyKey,
       },
       body: JSON.stringify({
-        from: process.env.ORDER_EMAIL_FROM || 'Drone ID Sheet <onboarding@resend.dev>',
+        from: process.env.ORDER_EMAIL_FROM || 'Print Drone IDs <onboarding@resend.dev>',
         to: [mail.to],
         reply_to: mail.replyTo,
         subject: mail.subject,

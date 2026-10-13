@@ -1,4 +1,4 @@
-name: drone-id-sheet
+name: printdroneids
 
 services:
   app:
@@ -7,9 +7,9 @@ services:
       dockerfile: .devcontainer/Dockerfile
     command: sleep infinity
     volumes:
-      - ..:/workspaces/drone-id-sheet:cached
+      - ..:/workspaces/printdroneids:cached
       # kept apart from the host's node_modules
-      - node-modules:/workspaces/drone-id-sheet/node_modules
+      - node-modules:/workspaces/printdroneids/node_modules
       # logins and plugins survive rebuilds
       - claude:/home/node/.claude
       - netlify:/home/node/.config/netlify
