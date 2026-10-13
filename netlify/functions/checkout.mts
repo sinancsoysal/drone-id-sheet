@@ -52,36 +52,42 @@ export default async (req: Request) => {
     cards.push(bytes);
   }
 
-  const order: Order = {
-    id: newOrderId(),
-    createdAt: new Date().toISOString(),
-    status: 'pending',
-    cards: cards.length,
-    labelSets: operatorIds.length,
-    operatorIds,
-    totalPence: q.totalPence,
-  };
-  const store = orders();
-  await Promise.all(cards.map((bytes, i) => store.set(cardKey(order.id, i), bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)));
+  try {
+    const order: Order = {
+      id: newOrderId(),
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      cards: cards.length,
+      labelSets: operatorIds.length,
+      operatorIds,
+      totalPence: q.totalPence,
+    };
+    const store = orders();
+    await Promise.all(cards.map((bytes, i) => store.set(cardKey(order.id, i), bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)));
 
-  const origin = new URL(req.url).origin;
-  const session = await client.checkout.sessions.create({
-    mode: 'payment',
-    client_reference_id: order.id,
-    metadata: { orderId: order.id },
-    payment_intent_data: { metadata: { orderId: order.id } },
-    line_items: q.lines.map((l) => ({
-      quantity: l.quantity,
-      price_data: { currency: PRICING.currency, unit_amount: l.unitPence, product_data: { name: l.description } },
-    })),
-    shipping_address_collection: { allowed_countries: ['GB'] },
-    expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
-    success_url: `${origin}/order-success.html?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/?cancelled=1`,
-  });
-  order.sessionId = session.id;
-  await saveOrder(order);
-  return json({ url: session.url, ref: order.id });
+    const origin = new URL(req.url).origin;
+    const session = await client.checkout.sessions.create({
+      mode: 'payment',
+      client_reference_id: order.id,
+      metadata: { orderId: order.id },
+      payment_intent_data: { metadata: { orderId: order.id } },
+      line_items: q.lines.map((l) => ({
+        quantity: l.quantity,
+        price_data: { currency: PRICING.currency, unit_amount: l.unitPence, product_data: { name: l.description } },
+      })),
+      shipping_address_collection: { allowed_countries: ['GB'] },
+      expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
+      success_url: `${origin}/order-success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/?cancelled=1`,
+    });
+    order.sessionId = session.id;
+    await saveOrder(order);
+    return json({ url: session.url, ref: order.id });
+  } catch (e) {
+    // never send Stripe or storage errors (and their stack traces) to the browser
+    console.error('Checkout failed', e);
+    return json({ error: 'Ordering failed. Please try again in a few minutes.' }, 502);
+  }
 };
 
 export const config: Config = { path: '/api/checkout' };
