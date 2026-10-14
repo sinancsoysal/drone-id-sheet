@@ -29,6 +29,9 @@ test('every page in the sitemap is ready for search engines', async ({ page, req
       for (const ld of await page.locator('script[type="application/ld+json"]').allTextContents()) {
         expect(() => JSON.parse(ld)).not.toThrow();
       }
+      for (const img of await page.locator('main img').all()) {
+        expect(await img.getAttribute('alt'), await img.getAttribute('src') ?? '').toBeTruthy();
+      }
     });
   }
   expect(titles.size).toBe(urls.length);
@@ -58,5 +61,22 @@ test('the order confirmation and not-found pages stay out of search results', as
   for (const path of ['/order-success.html', '/404.html']) {
     await page.goto(path);
     await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex');
+  }
+});
+
+test('the home page structured data matches what visitors see', async ({ page, request }) => {
+  await page.goto('/');
+  const lds = (await page.locator('script[type="application/ld+json"]').allTextContents()).map((t) => JSON.parse(t));
+  const nodes = lds.flatMap((ld) => ld['@graph'] ?? [ld]);
+  const byType = (type: string) => nodes.find((n) => n['@type'] === type);
+
+  const faq = byType('FAQPage');
+  const shown = (await page.locator('.faq h3').allTextContents()).map((q) => q.trim());
+  expect(faq.mainEntity.map((q: { name: string }) => q.name)).toEqual(shown);
+
+  const product = byType('Product');
+  expect(product.offers.price).toBe((await page.locator('[data-price-base]').textContent())?.replace('£', ''));
+  for (const url of product.image) {
+    expect((await request.get(new URL(url).pathname)).status(), url).toBe(200);
   }
 });

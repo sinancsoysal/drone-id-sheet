@@ -14,6 +14,7 @@
     "fixtures": "tsx scripts/make-fixtures.ts",
     "label-chars": "tsx scripts/make-label-chars.ts",
     "social": "tsx scripts/make-social.ts",
+    "page-images": "tsx scripts/make-page-images.ts",
     "guide": "UPDATE_GUIDE=1 playwright test e2e/guide.spec.ts --project=desktop",
     "dev:netlify": "netlify dev",
     "stripe:listen": "stripe listen --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired --forward-to localhost:8888/api/stripe-webhook"

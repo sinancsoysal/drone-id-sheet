@@ -24,7 +24,7 @@ UK operator ID label rules in short (CAA Drone Code, checked October 2026):
 
 - [Label maker](https://printdroneids.netlify.app/): add IDs, check the preview, download the free PDF or order prints
 - [UK drone operator ID label rules](https://printdroneids.netlify.app/drone-operator-id-label-rules): where the label goes, letter size, which drones need one, Remote ID, with links to the CAA sources
-- [How it works](https://printdroneids.netlify.app/guide): step-by-step guide with screenshots
+- [How to print operator ID stickers at home](https://printdroneids.netlify.app/guide): step-by-step guide with screenshots, printing tips and sticker paper
 
 ## Optional
 
