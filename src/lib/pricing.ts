@@ -40,7 +40,7 @@ export function quote(cards: number, labelSets: number): Quote {
 
   const lines: QuoteLine[] = [
     {
-      description: 'Print & post: laminated flyer ID card and operator ID sticker set, UK delivery',
+      description: 'Print & post: laminated flyer ID card and operator ID sticker set (9 stickers), UK delivery',
       unitPence: PRICING.basePence,
       quantity: 1,
     },
@@ -49,7 +49,7 @@ export function quote(cards: number, labelSets: number): Quote {
     lines.push({ description: 'Extra laminated flyer ID card', unitPence: PRICING.extraCardPence, quantity: cards - 1 });
   }
   if (labelSets > 1) {
-    lines.push({ description: 'Extra operator ID sticker set', unitPence: PRICING.extraLabelSetPence, quantity: labelSets - 1 });
+    lines.push({ description: 'Extra operator ID sticker set (9 stickers)', unitPence: PRICING.extraLabelSetPence, quantity: labelSets - 1 });
   }
   return { lines, totalPence: lines.reduce((s, l) => s + l.unitPence * l.quantity, 0) };
 }

@@ -3,7 +3,7 @@
 Turn UK CAA **flyer ID** and **operator ID** documents into one printable A4 sheet: wallet-sized flyer ID cards and operator ID labels to stick on your drones.
 
 - **Free:** everything runs in the browser. Files are never uploaded.
-- **Printed and posted, £4.99:** laminated flyer ID cards and waterproof vinyl operator ID stickers, cut and ready to peel, with free UK delivery. Payment is through Stripe Checkout.
+- **Printed and posted, £4.99:** laminated flyer ID cards and the full set of 9 waterproof vinyl operator ID stickers per operator ID, cut and ready to peel, with free UK delivery. Payment is through Stripe Checkout.
 
 ![The sheet preview](public/guide/03-preview.png)
 

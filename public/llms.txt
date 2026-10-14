@@ -9,7 +9,7 @@ Key facts:
 - URL: https://printdroneids.netlify.app/
 - Input: the operator ID and flyer ID PDFs from register-drones.caa.co.uk, photos or screenshots of them, or an operator ID typed or pasted in. Operator IDs from other countries can be typed (up to 24 characters).
 - Output: one A4 PDF with operator ID labels in three sizes (82 × 24 mm, 57 × 17 mm and a two-line 38 × 20 mm for small drones) and flyer ID cards. Print at 100% / "Actual size".
-- Price: the PDF is free with no sign-up. Printed and posted: £4.99 for one laminated card and one set of vinyl labels, including UK delivery by Royal Mail.
+- Price: the PDF is free with no sign-up. Printed and posted: £4.99 for one laminated card and one set of 9 vinyl labels (every label on the sheet for one operator ID: 2 large, 3 medium, 4 two-line), including UK delivery by Royal Mail.
 - Privacy: no cookies, no analytics; files are only uploaded when ordering prints and deleted after the order is sent to print.
 - Not affiliated with the UK Civil Aviation Authority (CAA). Open source: https://github.com/sinancsoysal/drone-id-sheet
 
