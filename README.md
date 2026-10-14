@@ -73,6 +73,7 @@ The Playwright tests run on desktop and mobile viewports and record a video of e
 - `npm run guide` also copies the desktop ones into `public/guide/`
 - `npm run social` then redraws the link preview image (`public/og.png`) from the sample sheet
 - `npm run page-images` redraws the sample sheet and label pictures in `public/images/` from the sample PDF the guide test downloads (needs `pdftoppm`)
+- the `.jpg` photos in `public/images/` are real photos of a DJI Air 3S with the labels redrawn from the label design using sample IDs, the card's details and every QR code replaced, the camera metadata (including GPS) removed, and the background swapped for a CC0 wood texture ([Poly Haven cherry veneer](https://polyhaven.com/a/cherry_veneer)); keep it that way for any new photo
 - on GitHub, the **Update guide screenshots** workflow does the same and commits them
 
 CI uploads these artifacts on every run: `guide-screenshots`, `e2e-videos`, `sample-sheets` (the PDFs the tests downloaded) and `playwright-report`.

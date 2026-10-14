@@ -128,3 +128,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .sample img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
 .sample figcaption { color: var(--muted); font-size: .9rem; margin-top: .35rem; }
 @media (max-width: 680px) { .sample-figs { grid-template-columns: 1fr; } }
+.sample-figs.photos { grid-template-columns: 3fr 2fr; margin-top: 1rem; }
+.prose .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; margin: 1rem 0 .5rem; }
+.prose .photo-grid figure { margin: 0; }
+.prose .right { color: var(--ok); }
+.prose .wrong { color: var(--error); }
+@media (max-width: 680px) { .sample-figs.photos { grid-template-columns: 1fr; } }
